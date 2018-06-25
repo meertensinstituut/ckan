@@ -1,6 +1,6 @@
 # See CKAN docs on installation from Docker Compose on usage
 FROM debian:jessie
-MAINTAINER Open Knowledge
+LABEL maintainer="Open Knowledge"
 
 # Install required system packages
 RUN apt-get -q -y update \
@@ -21,6 +21,7 @@ RUN apt-get -q -y update \
         git-core \
         vim \
         wget \
+        net-tools \ 
     && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -48,14 +49,27 @@ RUN ckan-pip install -U pip && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirement-setuptools.txt && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirements.txt && \
     ckan-pip install -e $CKAN_VENV/src/ckan/ && \
+    ckan-pip install ckanapi && \
+    ln -s /usr/lib/ckan/venv/bin/ckanapi /usr/local/bin/ckanapi && \
     ln -s $CKAN_VENV/src/ckan/ckan/config/who.ini $CKAN_CONFIG/who.ini && \
     cp -v $CKAN_VENV/src/ckan/contrib/docker/ckan-entrypoint.sh /ckan-entrypoint.sh && \
     chmod +x /ckan-entrypoint.sh && \
     chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH
 
+# USER root
+# RUN ckan-pip install -e git+https://github.com/liip/ckanext-ddi.git#egg=ckanext-ddi --src /var/lib/ckan/ckanext && \
+    # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop 
+
+RUN . $CKAN_VENV/bin/activate && cd $CKAN_VENV/src/ckan/ckanext-facet && pwd && \
+    python setup.py develop && \
+    chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH && \
+    deactivate
+
+USER ckan
 ENTRYPOINT ["/ckan-entrypoint.sh"]
 
 USER ckan
 EXPOSE 5000
+ADD contrib/docker/production.ini /etc/ckan/production.ini
 
 CMD ["ckan-paster","serve","/etc/ckan/production.ini"]

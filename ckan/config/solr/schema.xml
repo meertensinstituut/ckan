@@ -81,6 +81,19 @@ schema. In this case the version should be set to the next CKAN version number.
             <filter class="solr.LowerCaseFilterFactory"/>
         </analyzer>
     </fieldType>
+
+    <!-- ISEBEL semicolonDelimited - based on PatternTokenizer -->
+    <fieldType name="semicolonDelimited" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.PatternTokenizerFactory" pattern="\s*;\s*"/>
+            <!--<filter class="solr.LowerCaseFilterFactory"/>-->
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.PatternTokenizerFactory" pattern="\s*;\s*"/>
+            <!--filter class="solr.LowerCaseFilterFactory"/>-->
+        </analyzer>
+    </fieldType>
+    <!-- ISEBEL end semicolonDelimited - based on PatternTokenizer -->
 </types>
 
 
@@ -158,6 +171,10 @@ schema. In this case the version should be set to the next CKAN version number.
     <dynamicField name="res_extras_*" type="text" indexed="true" stored="true" multiValued="true"/>
     <dynamicField name="vocab_*" type="string" indexed="true" stored="true" multiValued="true"/>
     <dynamicField name="*" type="string" indexed="true"  stored="false"/>
+
+    <!-- ISEBEL changes start -->
+    <field name="extra_Keyword" type="semicolonDelimited" indexed="true" stored="true" />
+    <!-- ISEBEL changes end -->
 </fields>
 
 <uniqueKey>index_id</uniqueKey>

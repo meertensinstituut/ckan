@@ -7,6 +7,8 @@ volumes:
   ckan_home:
   ckan_storage:
   pg_data:
+  data-volume:
+  solr-volume:
 
 services:
   ckan:
@@ -33,11 +35,12 @@ services:
       - CKAN_MAX_UPLOAD_SIZE_MB=${CKAN_MAX_UPLOAD_SIZE_MB}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
-
+    privileged: true
     volumes:
-      - ckan_config:/etc/ckan
-      - ckan_home:/usr/lib/ckan
-      - ckan_storage:/var/lib/ckan
+      # - ckan_config:/etc/ckan
+      # - ckan_home:/usr/lib/ckan
+      # - ckan_storage:/var/lib/ckan
+      - data-volume:/var/harvester
 
   datapusher:
     container_name: datapusher
@@ -56,6 +59,7 @@ services:
     environment:
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # command: /docker-entrypoint-initdb.d/00_create_datastore.sh
     volumes:
       - pg_data:/var/lib/postgresql/data
 
@@ -64,8 +68,21 @@ services:
     build:
       context: ../../
       dockerfile: contrib/docker/solr/Dockerfile
-
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr-volume:/solr/data
 
   redis:
     container_name: redis
     image: redis:latest
+
+  harvester:
+    container_name: harvester
+    build: ./harvester
+    tty: true
+    command: /tmp/harvester_src/src/main/scripts/do-harvester.sh
+    volumes:
+      - data-volume:/var/harvester
+      - ckan_config:/etc/ckan
+  
