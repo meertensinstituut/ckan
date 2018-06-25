@@ -27,10 +27,18 @@ datasets with a rich front-end, full API (for both data and catalog), visualizat
 tools and more. Read more at `ckan.org <http://ckan.org/>`_.
 
 
-Installation
-------------
+Original DKAN Installation
+--------------------------
 
 See the `CKAN Documentation <http://docs.ckan.org>`_ for installation instructions.
+
+Easy start using docker
+-----------------------
+  * clone ckan repository with the submodule: `git clone --recurse-submodules -j8 ckan`
+  * go to ckan folder: `cd ckan`
+  * go to docker subfolder: `cd contrib/docker`
+  * start the whole setup: `./start.sh`
+  * stop the whole setup: `./stop.sh`
 
 
 Support
