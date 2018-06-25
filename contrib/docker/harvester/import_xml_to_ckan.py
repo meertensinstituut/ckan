@@ -206,6 +206,7 @@ def __main__():
     wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     org = 'isebel_verhalenbank'
     debug = True
+    qty = 10
 
     # Get current dataset names
     print 'before getting created package'
@@ -228,7 +229,7 @@ def __main__():
     print 'get file lists'
     counter = 0
     for f in files:
-        if counter > 99 and debug:
+        if counter > qty - 1 and debug:
             break
         counter += 1
         print f
