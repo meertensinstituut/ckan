@@ -45,3 +45,8 @@ node_modules/
 
 # docker
 contrib/docker/.env
+
+# ckanext-facet
+ckanext-facet/
+ckanext-facet/*
+
