@@ -123,6 +123,14 @@ class XML():
                     }
                 )
 
+        # get keyword
+        keyword_list = list()
+        # if root.find('keyword') is not None:
+        for keyword in root.iter('keyword'):
+            keyword_list.append(keyword.text)
+
+        self.data['keyword'] = '; '.join(keyword_list)
+
         return self.data
 
 
@@ -153,6 +161,10 @@ def create_package(org, f, apikey):
             {
                 'key': 'dc_type',
                 'value': data['type']
+            },
+            {
+                'key': 'keyword',
+                'value': data['keyword']
             },
 
         ]
