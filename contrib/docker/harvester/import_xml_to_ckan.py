@@ -144,7 +144,9 @@ def create_package(org, f, apikey):
         'name': data['name'],
         'notes': data['content'],
         'owner_org': org,
-
+        'spatial': {"type":"Polygon","coordinates":[[[2.05827, 49.8625],[2.05827, 55.7447], [-6.41736, 55.7447], [-6.41736, 49.8625], [2.05827, 49.8625]]]},
+        'spatial-text': 'test',
+        'spatial-uri': 'google.com',
         'extras': [
             {
                 'key': 'Reference',
@@ -214,7 +216,7 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "2cac2cd0-fd03-4e1a-8717-d931be068869"
+    apikey = "1f2fbd10-c90f-42d0-b0c5-e318695d0f36"
     wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     org = 'isebel_verhalenbank'
     debug = True

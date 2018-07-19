@@ -62,6 +62,13 @@
       <action type="strip"/>
       <action type="save" dir="isebel" suffix=".xml"/>
     </format>
+    <format match="prefix" value="oai_hro">
+      <action type="save" dir="oai" suffix=".xml"/>
+      <action type="split"/>
+      <action type="save" dir="rec" suffix=".xml"/>
+      <action type="strip"/>
+      <action type="save" dir="isebel" suffix=".xml"/>
+    </format>
   </actions>
 
 
@@ -78,5 +85,6 @@
     </provider>-->
     <provider url="http://www.isebel.eu/oai-pmh/verhalenbank/" name="isebel_verhalenbank"/>
     <provider url="http://etkspace.scandinavian.ucla.edu/oai_pmh/" name="isebel_ucla"/>
+    <provider url="http://isebel.informatik.uni-rostock.de/OAIHandler" name="isebel_rostock"/>
   </providers>
 </config>

@@ -1,9 +1,12 @@
 #FROM postgres:9.6
 FROM mdillon/postgis
-MAINTAINER Open Knowledge
+LABEL maintainer="Open Knowledge"
 
 # Allow connections; we don't map out any ports so only linked docker containers can connect
 RUN echo "host all  all    0.0.0.0/0  md5" >> /var/lib/postgresql/data/pg_hba.conf
+
+#RUN apt-get update && apt-get install python-dev libxml2-dev libxslt1-dev libgeos-c1 -y
+RUN apt-get update && apt-get install python-dev libxml2-dev libxslt1-dev -y
 
 # Customize default user/pass/db
 ENV POSTGRES_DB ckan
