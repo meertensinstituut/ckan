@@ -96,6 +96,7 @@ class XML():
 
         # get location data
         self.data['location'] = []
+        self.data['spatial_points'] = []
         if root.find('geoLocations') is not None:
             for geo_location in root.find('geoLocations'):
                 location_id = geo_location.attrib['{http://www.w3.org/XML/1998/namespace}id']
@@ -103,9 +104,13 @@ class XML():
                     {
                         'location_name_%s' % location_id: geo_location.find('geoLocationPlace').text if geo_location.find('geoLocationPlace') is not None else '',
                         'location_id_%s' % location_id: location_id,
-                        'location_geopoint_%s' % location_id: '%s, %s' % (geo_location.find('geoLocationPoint').find('pointLatitude').text, geo_location.find('geoLocationPoint').find('pointLongitude').text) if geo_location.find('geoLocationPoint').find('pointLatitude') is not None else ('', '')
+                        'location_geopoint_%s' % location_id: '%s, %s' % (geo_location.find('geoLocationPoint').find('pointLongitude').text, geo_location.find('geoLocationPoint').find('pointLatitude').text) if geo_location.find('geoLocationPoint').find('pointLatitude') is not None else ('', '')
                     }
                 )
+
+                # get geolocation in geojson (acutally as array, will json.dumps to json
+                if geo_location.find('geoLocationPoint').find('pointLatitude').text is not None:
+                    self.data['spatial_points'].append([float(geo_location.find('geoLocationPoint').find('pointLongitude').text), float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
 
         # get person data
         self.data['person'] = []
@@ -144,9 +149,6 @@ def create_package(org, f, apikey):
         'name': data['name'],
         'notes': data['content'],
         'owner_org': org,
-        'spatial': {"type":"Polygon","coordinates":[[[2.05827, 49.8625],[2.05827, 55.7447], [-6.41736, 55.7447], [-6.41736, 49.8625], [2.05827, 49.8625]]]},
-        'spatial-text': 'test',
-        'spatial-uri': 'google.com',
         'extras': [
             {
                 'key': 'Reference',
@@ -168,9 +170,17 @@ def create_package(org, f, apikey):
                 'key': 'keyword',
                 'value': data['keyword']
             },
-
+            # {
+            #     'key': 'spatial',
+            #     'value': json.dumps({
+            #         "type": "Point",
+            #         "coordinates": [-3.145,53.078]
+            #     })
+            # },
         ]
     }
+
+    spatial_points = data['spatial_points']
 
     for geo_location in data['location']:
         for k, v in geo_location.items():
@@ -180,6 +190,33 @@ def create_package(org, f, apikey):
                     'value': v
                 }
             )
+
+    if len(spatial_points) > 1:
+        print(spatial_points)
+        dataset_dict['extras'].append(
+            {
+                'key': 'spatial',
+                'value': json.dumps(
+                    {
+                        'type': 'MultiPoint',
+                        'coordinates': spatial_points
+                    }
+                )
+            }
+        )
+    elif len(spatial_points) == 1:
+        print spatial_points[0]
+        dataset_dict['extras'].append(
+            {
+                'key': 'spatial',
+                'value': json.dumps(
+                    {
+                        'type': 'Point',
+                        'coordinates': spatial_points[0]
+                    }
+                )
+            }
+        )
 
     for person in data['person']:
         for k, v in person.items():
