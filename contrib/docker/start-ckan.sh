@@ -4,8 +4,8 @@ if [ ! -f .env ]; then
     cp .env.template .env
 fi
 
-rm -fr /Users/vic/Documents/isebel/ckan/ckanext-facet/
-cp -a /Users/vic/Documents/isebel/code_dev/ckanext-facet/. /Users/vic/Documents/isebel/ckan/ckanext-facet/
+rm -fr ../../../ckan/ckanext-facet/
+cp -a ../../../code_dev/ckanext-facet/. ../../../ckan/ckanext-facet/
 
 docker-compose up -d --build 
 # sleep 10
@@ -20,3 +20,4 @@ docker-compose up -d --build
 
 docker cp harvester/import_xml_to_ckan_ucla.py ckan:/var/harvester/import_xml_to_ckan_ucla.py
 docker cp harvester/import_xml_to_ckan.py ckan:/var/harvester/import_xml_to_ckan.py
+docker cp ../../../code_dev/translation-thesaurus ckan:/var/harvester/translation-thesaurus

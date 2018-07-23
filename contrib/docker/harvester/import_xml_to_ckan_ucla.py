@@ -120,10 +120,17 @@ def create_package(org, f, apikey):
         print e.message
         print i
 
+    # dataset_dict['extras'].append(
+    #     {
+    #         'key': 'index',
+    #         'value': data['index']
+    #     }
+    # )
+
     dataset_dict['extras'].append(
         {
-            'key': 'index',
-            'value': data['index']
+            'key': 'MD5',
+            'value': data['md5']
         }
     )
 

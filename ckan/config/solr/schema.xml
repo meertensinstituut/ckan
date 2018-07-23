@@ -94,6 +94,15 @@ schema. In this case the version should be set to the next CKAN version number.
         </analyzer>
     </fieldType>
     <!-- ISEBEL end semicolonDelimited - based on PatternTokenizer -->
+
+    <!-- ISEBEL solr-spatial-field start-->
+    <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
+        spatialContextFactory="com.spatial4j.core.context.jts.JtsSpatialContextFactory"
+        autoIndex="true"
+        distErrPct="0.025"
+        maxDistErr="0.000009"
+        distanceUnits="degrees" />
+    <!-- ISEBEL solr-spatial-field end-->
 </types>
 
 
@@ -174,6 +183,14 @@ schema. In this case the version should be set to the next CKAN version number.
 
     <!-- ISEBEL changes start -->
     <field name="keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
+
+    <!-- <field name="bbox_area" type="float" indexed="true" stored="true" />
+    <field name="maxx" type="float" indexed="true" stored="true" />
+    <field name="maxy" type="float" indexed="true" stored="true" />
+    <field name="minx" type="float" indexed="true" stored="true" />
+    <field name="miny" type="float" indexed="true" stored="true" /> -->
+
+    <field name="spatial_geom"  type="location_rpt" indexed="true" stored="true" multiValued="true" />
     <!-- ISEBEL changes end -->
 </fields>
 

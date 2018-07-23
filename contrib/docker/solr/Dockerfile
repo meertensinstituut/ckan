@@ -1,5 +1,5 @@
 FROM solr:6.6.2
-MAINTAINER Open Knowledge
+LABEL maintainer="Open Knowledge"
 
 # Enviroment
 ENV SOLR_CORE ckan
@@ -26,5 +26,11 @@ RUN echo name=$SOLR_CORE > /opt/solr/server/solr/$SOLR_CORE/core.properties
 USER root
 RUN chown -R $SOLR_USER:$SOLR_USER /opt/solr/server/solr/$SOLR_CORE
 
+# install JTS in order to use solr-spatial-field to accept geometry Point and Square
+RUN apt-get update && apt-get install libjts-java -y && \
+    cp /usr/share/java/jts.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/jts.jar && \
+    cp /usr/share/java/jts-1.14.jar /opt/solr/server/solr-webapp/webapp/WEB-INF/lib/jts-1.14.jar
+
 # User
 USER $SOLR_USER:$SOLR_USER
+

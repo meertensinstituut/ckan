@@ -170,6 +170,8 @@ def create_package(org, f, apikey):
                 'key': 'keyword',
                 'value': data['keyword']
             },
+
+
             # {
             #     'key': 'spatial',
             #     'value': json.dumps({
@@ -190,6 +192,14 @@ def create_package(org, f, apikey):
                     'value': v
                 }
             )
+
+            if 'location_name' in k:
+                dataset_dict['extras'].append(
+                    {
+                        'key': 'placeOfNarration',
+                        'value': v
+                    }
+                )
 
     if len(spatial_points) > 1:
         print(spatial_points)
