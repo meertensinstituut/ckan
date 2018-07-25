@@ -50,6 +50,7 @@ RUN ckan-pip install -U pip && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirements.txt && \
     ckan-pip install -e $CKAN_VENV/src/ckan/ && \
     ckan-pip install ckanapi && \
+    ckan-pip install flask-debugtoolbar && \
     ln -s /usr/lib/ckan/venv/bin/ckanapi /usr/local/bin/ckanapi && \
     ln -s $CKAN_VENV/src/ckan/ckan/config/who.ini $CKAN_CONFIG/who.ini && \
     cp -v $CKAN_VENV/src/ckan/contrib/docker/ckan-entrypoint.sh /ckan-entrypoint.sh && \

@@ -158,19 +158,18 @@ def create_package(org, f, apikey):
                 'key': 'MD5',
                 'value': data['md5']
             },
-            {
-                'key': 'identifier',
-                'value': data['identifier']
-            },
+            # {
+            #     'key': 'identifier',
+            #     'value': data['identifier']
+            # },
             {
                 'key': 'dc_type',
                 'value': data['type']
             },
             {
-                'key': 'keyword',
+                'key': 'nl_keyword',
                 'value': data['keyword']
             },
-
 
             # {
             #     'key': 'spatial',

@@ -85,7 +85,7 @@ class XML():
 
 
 def create_package(org, f, apikey):
-    isebel_list = ['text', 'identifier', 'url', 'datePublished', 'narrator', 'placeOfNarration', 'placeMentioned']
+    isebel_list = ['text', 'url', 'datePublished', 'narrator', 'placeOfNarration', 'placeMentioned']
     data = XML().parse_xml(f)
     data['md5'] = md5(f)
 
@@ -136,7 +136,7 @@ def create_package(org, f, apikey):
 
     dataset_dict['extras'].append(
         {
-            'key': 'keyword',
+            'key': 'da_keyword',
             'value': data['keyword']
         }
     )
