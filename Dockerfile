@@ -61,7 +61,7 @@ RUN ckan-pip install -U pip && \
 # RUN ckan-pip install -e git+https://github.com/liip/ckanext-ddi.git#egg=ckanext-ddi --src /var/lib/ckan/ckanext && \
     # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop 
 
-RUN . $CKAN_VENV/bin/activate && cd $CKAN_VENV/src/ckan/ckanext-facet && pwd && \
+RUN . $CKAN_VENV/bin/activate && ls -la $CKAN_VENV/src/ckan && cd $CKAN_VENV/src/ckan/ckanext-facet && pwd && \
     python setup.py develop && \
     ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git#egg=ckanext-spatial" && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckanext-spatial/pip-requirements.txt  && \

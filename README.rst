@@ -34,17 +34,21 @@ See the `CKAN Documentation <http://docs.ckan.org>`_ for installation instructio
 
 Easy start using docker
 -----------------------
-  * clone ckan repository with the submodule: `git clone --recurse-submodules -j8 ckan`
-  * go to ckan folder: `cd ckan`
-  * go to docker subfolder: `cd contrib/docker`
-  * start the whole setup: `./start.sh`
-  * stop the whole setup: `./stop.sh`
+  * Create a production.ini file in folder ckan/contrib/docker/ 
+  * Clone ckan repository with the submodule: `git clone --recurse-submodules -j8 ckan`
+  * Make directory for ISEBEL specific code: `mkdir code_dev && cd code_dev`
+  * Clone ISEBEL CKAN extension: `git clone https://github.com/vicding-mi/ckanext-facet.git`
+  * Clone translator scripts: `git clone https://git.informatik.uni-rostock.de/isebel/translation-thesaurus.git`
+  * Go to ckan folder: `cd ../ckan`
+  * Go to docker subfolder: `cd contrib/docker`
+  * Start the whole setup: `./start-ckan.sh`
+  * Stop the whole setup: `./stop-ckan.sh`
+
+  ** NOTE: the stop script will prune all the stopped containers (including the containers from other projects)
 
 
 Support
 -------
-For general discussion around CKAN, you can write to the `Google Group`_.
-
 If you need help with CKAN or want to ask a question, use either the
 `ckan-dev`_ mailing list or the `CKAN tag on Stack Overflow`_ (try
 searching the Stack Overflow and ckan-dev `archives`_ for an answer to your

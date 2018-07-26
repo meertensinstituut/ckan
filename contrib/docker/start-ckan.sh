@@ -4,8 +4,17 @@ if [ ! -f .env ]; then
     cp .env.template .env
 fi
 
-rm -fr ../../../ckan/ckanext-facet/
-cp -a ../../../code_dev/ckanext-facet/. ../../../ckan/ckanext-facet/
+rm -fr ../../ckanext-facet/
+echo "$?"
+if [ "0" -eq "$?" ]; then
+    echo "removed successfully ckanext-facet"
+else
+    echo "not zero"
+fi
+cp -a ../../../code_dev/ckanext-facet/. ../../ckanext-facet/
+if [ "0" -eq "$?" ]; then
+    echo "copied successfully ckanext-facet"
+fi
 
 docker-compose up -d --build 
 # sleep 10
