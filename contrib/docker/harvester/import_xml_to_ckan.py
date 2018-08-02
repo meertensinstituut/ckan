@@ -85,6 +85,7 @@ class XML():
             if '}' in el.tag:
                 el.tag = el.tag.split('}', 1)[1]  # strip all namespaces
                 # print el.tag
+
         root = tree.getroot()
         self.data['story'] = root.attrib['{http://www.w3.org/XML/1998/namespace}id']
 
@@ -128,6 +129,12 @@ class XML():
                     }
                 )
 
+        # get date
+        if root.find('date') is not None:
+            self.data['date'] = root.find('date').text[:10]
+        else:
+            self.data['date'] = None
+
         # get keyword
         keyword_list = list()
         # if root.find('keyword') is not None:
@@ -170,7 +177,10 @@ def create_package(org, f, apikey):
                 'key': 'nl_keyword',
                 'value': data['keyword']
             },
-
+            {
+                'key': 'date',
+                'value': data['date']
+            },
             # {
             #     'key': 'spatial',
             #     'value': json.dumps({
@@ -181,6 +191,7 @@ def create_package(org, f, apikey):
         ]
     }
 
+    # exit(dataset_dict)
     spatial_points = data['spatial_points']
 
     for geo_location in data['location']:
@@ -193,12 +204,16 @@ def create_package(org, f, apikey):
             )
 
             if 'location_name' in k:
-                dataset_dict['extras'].append(
-                    {
-                        'key': 'placeOfNarration',
-                        'value': v
-                    }
-                )
+                try:
+                    dataset_dict['extras'].append(
+                        {
+                            'key': 'placeOfNarration',
+                            'value': v
+                        }
+                    )
+                except:
+                    pass
+
 
     if len(spatial_points) > 1:
         print(spatial_points)
@@ -262,7 +277,7 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "1f2fbd10-c90f-42d0-b0c5-e318695d0f36"
+    apikey = "d75f0539-89f4-41d2-8c0d-92fbd820c53f"
     wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     org = 'isebel_verhalenbank'
     debug = True

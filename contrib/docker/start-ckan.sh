@@ -4,6 +4,7 @@ if [ ! -f .env ]; then
     cp .env.template .env
 fi
 
+# remove and copy the plugins from the latest codes - ckanext-facet
 rm -fr ../../ckanext-facet/
 echo "$?"
 if [ "0" -eq "$?" ]; then
@@ -16,6 +17,20 @@ if [ "0" -eq "$?" ]; then
     echo "copied successfully ckanext-facet"
 fi
 
+# remove and copy the plugins from the latest codes - ckanext-timeline
+rm -fr ../../ckanext-timeline/
+echo "$?"
+if [ "0" -eq "$?" ]; then
+    echo "removed successfully ckanext-timeline"
+else
+    echo "not zero"
+fi
+cp -a ../../../code_dev/ckanext-timeline/. ../../ckanext-timeline/
+if [ "0" -eq "$?" ]; then
+    echo "copied successfully ckanext-timeline"
+fi
+
+# Start docker
 docker-compose up -d --build 
 # sleep 10
 # docker-compose restart ckan

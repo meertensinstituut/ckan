@@ -163,7 +163,7 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "1f2fbd10-c90f-42d0-b0c5-e318695d0f36"
+    apikey = "d75f0539-89f4-41d2-8c0d-92fbd820c53f"
     wd = '/var/harvester/oai-isebel/isebel_ucla'
     org = 'isebel_ucla'
     debug = True

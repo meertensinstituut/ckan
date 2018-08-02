@@ -50,3 +50,5 @@ contrib/docker/.env
 ckanext-facet/
 ckanext-facet/*
 
+ckanext-timeline/
+ckanext-timeline/*

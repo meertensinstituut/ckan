@@ -85,6 +85,6 @@
     </provider>-->
     <provider url="http://www.isebel.eu/oai-pmh/verhalenbank/" name="isebel_verhalenbank"/>
     <provider url="http://etkspace.scandinavian.ucla.edu/oai_pmh/" name="isebel_ucla"/>
-    <provider url="http://isebel.informatik.uni-rostock.de/OAIHandler" name="isebel_rostock"/>
+    <provider url="https://oai.wossidia.de/OAIHandler" name="isebel_rostock"/>
   </providers>
 </config>
