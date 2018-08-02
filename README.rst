@@ -43,6 +43,7 @@ Easy start using docker
   * Go to ckan folder: `cd ../ckan`
   * Go to docker subfolder: `cd contrib/docker`
   * Start the whole setup: `./start-ckan.sh`
+  * Add admin user: `docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add ckan_admin`
   * Stop the whole setup: `./stop-ckan.sh`
 
   ** NOTE: the stop script will prune all the stopped containers (including the containers from other projects)
