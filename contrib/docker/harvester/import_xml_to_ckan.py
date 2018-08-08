@@ -4,8 +4,18 @@ import json
 import requests
 import xml.etree.ElementTree as et
 import hashlib
+import datetime
 from os import listdir
 from os.path import isfile, join
+
+
+def isdate(date_text, date_format='%Y-%m-%d'):
+    try:
+        datetime.datetime.strptime(date_text, date_format)
+        return True
+    except ValueError:
+        # raise ValueError("Incorrect data format, should be YYYY-MM-DD")
+        return False
 
 
 def md5(fname):
@@ -99,13 +109,19 @@ class XML():
         self.data['location'] = []
         self.data['spatial_points'] = []
         if root.find('geoLocations') is not None:
+
+            self.data['location_names'] = list()
+            self.data['location_geopoints'] = list()
             for geo_location in root.find('geoLocations'):
+                self.data['location_names'].append(geo_location.find('geoLocationPlace').text if geo_location.find('geoLocationPlace') is not None else '')
+                self.data['location_geopoints'].append([float(geo_location.find('geoLocationPoint').find('pointLongitude').text), float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
                 location_id = geo_location.attrib['{http://www.w3.org/XML/1998/namespace}id']
+
                 self.data['location'].append(
                     {
                         'location_name_%s' % location_id: geo_location.find('geoLocationPlace').text if geo_location.find('geoLocationPlace') is not None else '',
                         'location_id_%s' % location_id: location_id,
-                        'location_geopoint_%s' % location_id: '%s, %s' % (geo_location.find('geoLocationPoint').find('pointLongitude').text, geo_location.find('geoLocationPoint').find('pointLatitude').text) if geo_location.find('geoLocationPoint').find('pointLatitude') is not None else ('', '')
+                        'location_geopoint_%s' % location_id: [geo_location.find('geoLocationPoint').find('pointLongitude').text, geo_location.find('geoLocationPoint').find('pointLatitude').text] if geo_location.find('geoLocationPoint').find('pointLatitude') is not None else None
                     }
                 )
 
@@ -131,7 +147,12 @@ class XML():
 
         # get date
         if root.find('date') is not None:
-            self.data['date'] = root.find('date').text[:10]
+            if isdate(root.find('date').text[:10]):
+                self.data['date'] = root.find('date').text[:10]
+            elif isdate(root.find('date').text[:8], '%y-%m-%d'):
+                self.data['date'] = '19%s' % root.find('date').text[:8]
+            else:
+                self.data['date'] = None
         else:
             self.data['date'] = None
 
@@ -203,18 +224,19 @@ def create_package(org, f, apikey):
                 }
             )
 
-            if 'location_name' in k:
-                try:
-                    dataset_dict['extras'].append(
-                        {
-                            'key': 'placeOfNarration',
-                            'value': v
-                        }
-                    )
-                except:
-                    pass
+            # if 'location_name' in k:
+            #     try:
+            #         dataset_dict['extras'].append(
+            #             {
+            #                 'key': 'placeOfNarration',
+            #                 'value': v
+            #             }
+            #         )
+            #     except:
+            #         pass
 
-
+    print data['location_names']
+    print data['location_geopoints']
     if len(spatial_points) > 1:
         print(spatial_points)
         dataset_dict['extras'].append(
@@ -281,7 +303,7 @@ def __main__():
     wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     org = 'isebel_verhalenbank'
     debug = True
-    qty = 10
+    qty = 100
 
     # Get current dataset names
     print 'before getting created package'
