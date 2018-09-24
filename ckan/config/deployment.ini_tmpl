@@ -122,7 +122,7 @@ ckan.views.default_views = image_view text_view recline_view
 #ckan.base_templates_folder = templates-bs2
 
 ckan.site_title = CKAN
-ckan.site_logo = /base/images/ckan-logo.png
+ckan.site_logo = /base/images/ckan-logo.jpg
 ckan.site_description =
 ckan.favicon = /base/images/ckan.ico
 ckan.gravatar_default = identicon

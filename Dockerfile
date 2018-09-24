@@ -77,5 +77,6 @@ ENTRYPOINT ["/ckan-entrypoint.sh"]
 
 EXPOSE 5000
 ADD contrib/docker/production.ini /etc/ckan/production.ini
+# ADD contrib/docker/meertens-logo.png /var/lib/ckan/storage/uploads/group/meertens-logo.png
 
 CMD ["ckan-paster","serve","/etc/ckan/production.ini"]
