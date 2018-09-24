@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 import urllib2
 import urllib
 import json
@@ -6,6 +8,7 @@ import xml.etree.ElementTree as et
 import hashlib
 from os import listdir
 from os.path import isfile, join
+
 
 
 def md5(fname):
@@ -50,7 +53,7 @@ def remove_all_created_package(created_package, apikey):
 
 
 class XML():
-    isebel_list = ['content', 'title']
+    isebel_list = ['identifier', 'title', 'subtitle']
     data = dict()
 
     def get_element(self, tree, isebel_list = isebel_list):
@@ -67,42 +70,46 @@ class XML():
                 el.tag = el.tag.split('}', 1)[1]  # strip all namespaces
                 # print el.tag
 
-        root = tree.find('isebel')
+        root = tree.getroot()
         self.get_element(root)
 
-        # keyword_list = list()
-        # for keyword in root.iter('keyWord'):
-        #     keyword_list.append(keyword.text)
-        #
-        # self.data['keyword'] = '; '.join(keyword_list)
+        content_dict = dict()
+        for content in root.iter('content'):
+            try:
+                lang = content.attrib['{http://www.w3.org/XML/1998/namespace}lang']
+            except Exception as e:
+                lang = 'deu'
 
+            if lang not in content_dict.keys():
+                content_dict[lang] = content.text.encode('utf-8')
+
+            if lang == 'deu':
+                self.data['text'] = content.text.encode('utf-8')
+            # print content.attrib['{http://www.w3.org/XML/1998/namespace}lang']
+            # print content.text.encode('utf-8')
+        self.data['content'] = content_dict
+        # exit(self.data)
         return self.data
 
 
 def create_package(org, f, apikey):
-    isebel_list = ['text', 'url', 'datePublished', 'narrator', 'placeOfNarration', 'placeMentioned']
+    isebel_list = ['identifier', 'title', 'subtitle']
     data = XML().parse_xml(f)
     data['md5'] = md5(f)
 
     # Create dataset
     # Put the details of the dataset we're going to create into a dict.
     dataset_dict = {
-        'name': data['identifier'].lower(),
+        'name': 'story-' + str(data['identifier']),
         'notes': data['text'],
         'owner_org': org,
+        'title': data['title'],
         'extras': []
     }
 
     try:
         for i in isebel_list:
-            if i == 'url':
-                dataset_dict['extras'].append(
-                    {
-                        'key': 'data_url',
-                        'value': data[i]
-                    }
-                )
-            elif i == 'text':
+            if i == 'title':
                 pass
             else:
                 dataset_dict['extras'].append(
@@ -115,13 +122,6 @@ def create_package(org, f, apikey):
         print e.message
         print i
 
-    # dataset_dict['extras'].append(
-    #     {
-    #         'key': 'index',
-    #         'value': data['index']
-    #     }
-    # )
-
     dataset_dict['extras'].append(
         {
             'key': 'MD5',
@@ -129,14 +129,19 @@ def create_package(org, f, apikey):
         }
     )
 
-    dataset_dict['extras'].append(
-        {
-            'key': 'da_keyword',
-            'value': data['keyword']
-        }
-    )
-
-    # exit(dataset_dict['extras'])
+    try:
+        for (k, v) in data['content'].items():
+            # print k
+            # print v
+            if not k == 'deu':
+                dataset_dict['extras'].append(
+                    {
+                        'key': k,
+                        'value': v
+                    }
+                )
+    except Exception as e:
+        print e.message
 
     # Use the json module to dump the dictionary to a string for posting.
     data_string = urllib.quote(json.dumps(dataset_dict))
@@ -163,11 +168,11 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "d75f0539-89f4-41d2-8c0d-92fbd820c53f"
-    wd = '/var/harvester/oai-isebel/isebel_ucla'
-    org = 'isebel_ucla'
-    debug = True
-    qty = 10
+    apikey = "5f38155e-1e79-4ac6-889f-ecea89991375"
+    wd = '/var/harvester/oai-isebel/isebel_rostock'
+    org = 'isebel_wossidia'
+    debug = False
+    qty = 100
 
     # Get current dataset names
     print 'before getting created package'

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import urllib2
 import urllib
 import json
@@ -6,6 +7,8 @@ import xml.etree.ElementTree as et
 import hashlib
 from os import listdir
 from os.path import isfile, join
+import unicodedata
+from pprint import pprint
 
 
 def md5(fname):
@@ -58,9 +61,32 @@ class XML():
             tmp = tree.find(i)
             self.data[i] = tmp.text if tmp is not None else None
 
+    def forward_geocoding(self, place, mapkey):
+        # check if place is unicode
+        # if unicode encode continue with the code, if str, skip next command
+        print 'original place name: %s' % place.encode('utf-8')
+        if type(place) is not str:
+            place = urllib.quote(unicodedata.normalize('NFKD', place).encode('ascii', 'ignore'))
+        else:
+            place = urllib.quote(place)
+        print 'place name: %s' % place
+        url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/%s.json?access_token=%s' % (place, mapkey)
+
+        # print url
+        request = urllib2.Request(url)
+
+        # Make the HTTP request.
+        response = urllib2.urlopen(request)
+        assert response.code == 200
+
+        # Use the json module to load CKAN's response into a dictionary.
+        response_dict = json.loads(response.read())
+        return response_dict
+
     def parse_xml(self, path):
         # get xml file
         tree = et.parse(path)
+        self.data['spatial_points'] = []
 
         for el in tree.iter():
             if '}' in el.tag:
@@ -81,6 +107,14 @@ class XML():
 
         self.data['keyword'] = '; '.join(keyword_list)
 
+        for spatial_point in root.iter('placeOfNarration') or root.iter('placeOfMentioned'):
+            spatial_points = self.forward_geocoding(spatial_point.text, 'pk.eyJ1IjoidmljZGluZy1kaSIsImEiOiJjamtjajVod28waHN5M3FxZmw4YTMwdWJxIn0.8thy3AiluSOpJrukB8p0xQ')
+            # pprint(spatial_points['features'][0]['center'])
+            try:
+                self.data['spatial_points'].append(spatial_points['features'][0]['center'])
+            except Exception as e:
+                print 'No spatial points'
+        # pprint(self.data['spatial_points'])
         return self.data
 
 
@@ -141,6 +175,35 @@ def create_package(org, f, apikey):
         }
     )
 
+    spatial_points = data['spatial_points']
+
+    if len(spatial_points) > 1:
+        print(spatial_points)
+        dataset_dict['extras'].append(
+            {
+                'key': 'spatial',
+                'value': json.dumps(
+                    {
+                        'type': 'MultiPoint',
+                        'coordinates': spatial_points
+                    }
+                )
+            }
+        )
+    elif len(spatial_points) == 1:
+        print spatial_points[0]
+        dataset_dict['extras'].append(
+            {
+                'key': 'spatial',
+                'value': json.dumps(
+                    {
+                        'type': 'Point',
+                        'coordinates': spatial_points[0]
+                    }
+                )
+            }
+        )
+
     # exit(dataset_dict['extras'])
 
     # Use the json module to dump the dictionary to a string for posting.
@@ -168,11 +231,11 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "d75f0539-89f4-41d2-8c0d-92fbd820c53f"
+    apikey = "5f38155e-1e79-4ac6-889f-ecea89991375"
     wd = '/var/harvester/oai-isebel/isebel_ucla'
     org = 'isebel_ucla'
-    debug = True
-    qty = 10
+    debug = False
+    qty = 100
 
     # Get current dataset names
     print 'before getting created package'

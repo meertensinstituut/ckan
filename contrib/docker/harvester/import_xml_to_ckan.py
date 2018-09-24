@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import urllib2
 import urllib
 import json
@@ -186,10 +187,10 @@ def create_package(org, f, apikey):
                 'key': 'MD5',
                 'value': data['md5']
             },
-            # {
-            #     'key': 'identifier',
-            #     'value': data['identifier']
-            # },
+            {
+                'key': 'identifier',
+                'value': data['identifier']
+            },
             {
                 'key': 'dc_type',
                 'value': data['type']
@@ -299,7 +300,7 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "d75f0539-89f4-41d2-8c0d-92fbd820c53f"
+    apikey = "5f38155e-1e79-4ac6-889f-ecea89991375"
     wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     org = 'isebel_verhalenbank'
     debug = True

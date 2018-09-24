@@ -1,0 +1,89 @@
+CONNECTED(00000005)
+---
+Certificate chain
+ 0 s:/C=--/ST=SomeState/L=SomeCity/O=SomeOrganization/OU=SomeOrganizationalUnit/CN=wossidia2.uni-rostock.de/emailAddress=root@wossidia2.uni-rostock.de
+   i:/C=--/ST=SomeState/L=SomeCity/O=SomeOrganization/OU=SomeOrganizationalUnit/CN=wossidia2.uni-rostock.de/emailAddress=root@wossidia2.uni-rostock.de
+-----BEGIN CERTIFICATE-----
+MIIEUDCCAzigAwIBAgICfKYwDQYJKoZIhvcNAQELBQAwgcExCzAJBgNVBAYTAi0t
+MRIwEAYDVQQIDAlTb21lU3RhdGUxETAPBgNVBAcMCFNvbWVDaXR5MRkwFwYDVQQK
+DBBTb21lT3JnYW5pemF0aW9uMR8wHQYDVQQLDBZTb21lT3JnYW5pemF0aW9uYWxV
+bml0MSEwHwYDVQQDDBh3b3NzaWRpYTIudW5pLXJvc3RvY2suZGUxLDAqBgkqhkiG
+9w0BCQEWHXJvb3RAd29zc2lkaWEyLnVuaS1yb3N0b2NrLmRlMB4XDTE1MDIwNTA5
+NTYyMFoXDTE2MDIwNTA5NTYyMFowgcExCzAJBgNVBAYTAi0tMRIwEAYDVQQIDAlT
+b21lU3RhdGUxETAPBgNVBAcMCFNvbWVDaXR5MRkwFwYDVQQKDBBTb21lT3JnYW5p
+emF0aW9uMR8wHQYDVQQLDBZTb21lT3JnYW5pemF0aW9uYWxVbml0MSEwHwYDVQQD
+DBh3b3NzaWRpYTIudW5pLXJvc3RvY2suZGUxLDAqBgkqhkiG9w0BCQEWHXJvb3RA
+d29zc2lkaWEyLnVuaS1yb3N0b2NrLmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEAzJeCLWDau8HcMgOG+y/twJkCA+Vcz3zX3WYhXeXFiX0HysJVOdQ5
+03QQfewwEnfyiBLMMRyG8wXP+pRS1wd2KbdNzKDipK4m55x13jvb+sS7HOEmpWnp
+8XvmI7q2LqYdTjG57eZs7JEf6PdM3bVf7nivEnFCXuOpRu85WlsYcg8qKD2D+f3n
+0vK1vljtAU4wlNwXKcbww/PHfbVTOiiI1V7h/zvzfN6JhuhXWp9Kxv39S5pEOFcO
+hTlERoIgFL/S5TRxztprSfUDbN7rllVWU6gWxwOUiVlrNRgd1PqhFebQ2ZVChd8W
+WXykYhC0DVcRClRtdWVxMDptzc1lV61HEwIDAQABo1AwTjAdBgNVHQ4EFgQUCgLF
+ndgmlw9dK/9EO1K/asO9k3QwHwYDVR0jBBgwFoAUCgLFndgmlw9dK/9EO1K/asO9
+k3QwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAbzKzRyi7B2r7A/Ey
+NivYoSXYJhcGkQzZSy0VvjeoAbPFFs8BosbqePR5jYo7DwwAx6DTccS/6vchhwne
+wYiomerVki0barnjeR+eOvKR9kbFy+9FBcPsbcUGVQY6M3tGHl4Hwd3XLRzSCdmV
+GehVaRyVi/Y0AZI3j5E2oM1Zr5kpHH6+7sJKO3rR7cRlEtiN26OP40RZAQ3huRtZ
+nFdxM2dFtntqt1ig6bhTSLpv+BECPxfAdg+grr2KbzZvSvMN0nwcbPEVa4RXW4Ob
+Im9/QVucVUXLzG1D4YEPHBkOAEAq7+bER7kuFB0y/JvHh8bJX3hQNT3ZI5+B4wd6
+1z7rsQ==
+-----END CERTIFICATE-----
+---
+Server certificate
+subject=/C=--/ST=SomeState/L=SomeCity/O=SomeOrganization/OU=SomeOrganizationalUnit/CN=wossidia2.uni-rostock.de/emailAddress=root@wossidia2.uni-rostock.de
+issuer=/C=--/ST=SomeState/L=SomeCity/O=SomeOrganization/OU=SomeOrganizationalUnit/CN=wossidia2.uni-rostock.de/emailAddress=root@wossidia2.uni-rostock.de
+---
+No client certificate CA names sent
+---
+SSL handshake has read 1794 bytes and written 444 bytes
+---
+New, TLSv1/SSLv3, Cipher is ECDHE-RSA-AES256-GCM-SHA384
+Server public key is 2048 bit
+Secure Renegotiation IS supported
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+SSL-Session:
+    Protocol  : TLSv1.2
+    Cipher    : ECDHE-RSA-AES256-GCM-SHA384
+    Session-ID: F29C5F551DB3AE89F284976D1C8E4DF9B3F70E93D0A6C3889EC6E2ABCD29916D
+    Session-ID-ctx: 
+    Master-Key: 01B6AABA22C953A3A1135CE27B0BDF505C97B5E64EAE89C39DBADCCB87F083731E1EAAE7781D8667B0B868747C8B9B18
+    TLS session ticket lifetime hint: 300 (seconds)
+    TLS session ticket:
+    0000 - 17 eb 24 97 8e 99 5c 6e-b7 00 2d 71 65 4a 94 a8   ..$...\n..-qeJ..
+    0010 - 3f e1 2c 2d ba 5d 80 fe-70 6f b0 8e fd c2 f5 07   ?.,-.]..po......
+    0020 - 97 85 2d a4 35 14 fb 46-81 a7 e6 5a b7 9d 02 16   ..-.5..F...Z....
+    0030 - 1a 52 89 48 4a 25 9b a7-a4 6f 91 00 bc 62 f0 58   .R.HJ%...o...b.X
+    0040 - 12 43 69 f2 ea e3 42 41-31 6c d5 63 1a f7 0c da   .Ci...BA1l.c....
+    0050 - e8 c2 55 93 4e 68 5d 3d-96 8e 6f 13 8a ac c6 94   ..U.Nh]=..o.....
+    0060 - 75 17 86 55 28 f7 05 13-70 de d3 dc 16 67 2b 60   u..U(...p....g+`
+    0070 - fa 98 b2 6a 0f f3 72 6b-b2 3b 8e 91 73 ae 6c 8a   ...j..rk.;..s.l.
+    0080 - a4 60 8f 21 f7 0a 28 71-72 58 e0 d1 17 32 f2 9c   .`.!..(qrX...2..
+    0090 - 56 23 ba 06 8d 12 46 40-ed 02 9c 60 ee 3d 5b e3   V#....F@...`.=[.
+    00a0 - 96 a2 52 8a f9 f0 99 9e-7e f4 09 87 82 ad 96 28   ..R.....~......(
+    00b0 - 22 72 94 b9 19 f3 ac 50-b8 3d b2 23 a1 06 06 6f   "r.....P.=.#...o
+
+    Start Time: 1534342456
+    Timeout   : 300 (sec)
+    Verify return code: 10 (certificate has expired)
+---
+HTTP/1.1 400 Bad Request
+Date: Wed, 15 Aug 2018 14:13:36 GMT
+Server: Apache/2.2.15 (CentOS)
+Content-Length: 316
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/2.2.15 (CentOS) Server at wossidia.uni-rostock.de Port 443</address>
+</body></html>
+closed

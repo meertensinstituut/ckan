@@ -44,4 +44,5 @@ docker-compose up -d --build
 
 docker cp harvester/import_xml_to_ckan_ucla.py ckan:/var/harvester/import_xml_to_ckan_ucla.py
 docker cp harvester/import_xml_to_ckan.py ckan:/var/harvester/import_xml_to_ckan.py
+docker cp harvester/import_xml_to_ckan_wossidia.py ckan:/var/harvester/import_xml_to_ckan_wossidia.py
 docker cp ../../../code_dev/translation-thesaurus ckan:/var/harvester/translation-thesaurus
