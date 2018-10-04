@@ -100,7 +100,7 @@ def create_package(org, f, apikey):
     # Create dataset
     # Put the details of the dataset we're going to create into a dict.
     dataset_dict = {
-        'name': 'story-' + str(data['identifier']),
+        'name': "".join([c if c.isalnum() else "-" for c in str(data['identifier'])]),
         'notes': data['text'],
         'owner_org': org,
         'title': data['title'],
@@ -168,21 +168,21 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "5f38155e-1e79-4ac6-889f-ecea89991375"
+    apikey = "e6c1b9c8-3a5f-44b9-9b12-b9f8f8c4ca36"
     wd = '/var/harvester/oai-isebel/isebel_rostock'
     org = 'isebel_wossidia'
     debug = False
     qty = 100
 
     # Get current dataset names
-    print 'before getting created package'
-    created_package = get_created_package(org, apikey)
-    print 'after getting created package'
+    # print 'before getting created package'
+    # created_package = get_created_package(org, apikey)
+    # print 'after getting created package'
     # Remove all the datasets
-    remove_all_created_package(created_package, apikey)
+    # remove_all_created_package(created_package, apikey)
 
     created_package = get_created_package(org, apikey)
-    while len(created_package) > 0:
+    while len(created_package) > 0 and debug:
         created_package = get_created_package(org, apikey)
         remove_all_created_package(created_package, apikey)
 
@@ -190,7 +190,7 @@ def __main__():
     else:
         print 'removed dataset'
 
-    files = [join(wd, f) for f in listdir(wd) if isfile(join(wd, f))]
+    files = [join(wd, f) for f in sorted(listdir(wd)) if f.endswith('.xml') and isfile(join(wd, f))]
     print 'get file lists'
     counter = 0
     for f in files:

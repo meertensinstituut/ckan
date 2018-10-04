@@ -10,7 +10,7 @@ echo "$?"
 if [ "0" -eq "$?" ]; then
     echo "removed successfully ckanext-facet"
 else
-    echo "not zero"
+    echo "ckanext-facet not zero"
 fi
 cp -a ../../../code_dev/ckanext-facet/. ../../ckanext-facet/
 if [ "0" -eq "$?" ]; then
@@ -23,11 +23,24 @@ echo "$?"
 if [ "0" -eq "$?" ]; then
     echo "removed successfully ckanext-timeline"
 else
-    echo "not zero"
+    echo "ckanext-timeline not zero"
 fi
 cp -a ../../../code_dev/ckanext-timeline/. ../../ckanext-timeline/
 if [ "0" -eq "$?" ]; then
     echo "copied successfully ckanext-timeline"
+fi
+
+# remove and copy the ssl certificate
+rm -fr ../../ssl/
+echo "$?"
+if [ "0" -eq "$?" ]; then
+    echo "removed successfully ssl"
+else
+    echo "ssl not zero"
+fi
+sudo cp -a /etc/letsencrypt/live/search.isebel.eu/. ../../ssl/
+if [ "0" -eq "$?" ]; then
+    echo "copied successfully ssl"
 fi
 
 # Start docker

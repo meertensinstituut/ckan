@@ -8,6 +8,7 @@ import hashlib
 import datetime
 from os import listdir
 from os.path import isfile, join
+import time
 
 
 def isdate(date_text, date_format='%Y-%m-%d'):
@@ -79,7 +80,7 @@ def remove_all_created_package(created_package, apikey):
 
 
 class XML():
-    isebel_list = ['title', 'identifier', 'content', 'ref', 'type']
+    isebel_list = ['title', 'identifier', 'content', 'ref', 'type', 'subgenre']
     data = dict()
 
     def get_element(self, tree, isebel_list = isebel_list):
@@ -89,13 +90,15 @@ class XML():
 
     def parse_xml(self, path):
         # get xml file
-
-        tree = et.parse(path)
+        try:
+            tree = et.parse(path)
+        except Exception as e:
+            print 'error parsing XML file!'
+            print e.message
 
         for el in tree.iter():
             if '}' in el.tag:
                 el.tag = el.tag.split('}', 1)[1]  # strip all namespaces
-                # print el.tag
 
         root = tree.getroot()
         self.data['story'] = root.attrib['{http://www.w3.org/XML/1998/namespace}id']
@@ -115,7 +118,8 @@ class XML():
             self.data['location_geopoints'] = list()
             for geo_location in root.find('geoLocations'):
                 self.data['location_names'].append(geo_location.find('geoLocationPlace').text if geo_location.find('geoLocationPlace') is not None else '')
-                self.data['location_geopoints'].append([float(geo_location.find('geoLocationPoint').find('pointLongitude').text), float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
+                if geo_location.find('geoLocationPoint').find('pointLongitude') is not None and geo_location.find('geoLocationPoint').find('pointLatitude') is not None:
+                    self.data['location_geopoints'].append([float(geo_location.find('geoLocationPoint').find('pointLongitude').text), float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
                 location_id = geo_location.attrib['{http://www.w3.org/XML/1998/namespace}id']
 
                 self.data['location'].append(
@@ -127,7 +131,7 @@ class XML():
                 )
 
                 # get geolocation in geojson (acutally as array, will json.dumps to json
-                if geo_location.find('geoLocationPoint').find('pointLatitude').text is not None:
+                if geo_location.find('geoLocationPoint').find('pointLatitude') is not None:
                     self.data['spatial_points'].append([float(geo_location.find('geoLocationPoint').find('pointLongitude').text), float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
 
         # get person data
@@ -168,10 +172,55 @@ class XML():
         return self.data
 
 
-def create_package(org, f, apikey):
+def get_package_by_id(id, apikey):
+    request = urllib2.Request('http://ckan:5000/api/3/action/package_show?id=%s' % id)
+    request.add_header('Authorization', apikey)
+
+    # Make the HTTP request.
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except Exception as e:
+        print e.message
+
+    if response:
+        if response.code == 200:
+            # Use the json module to load CKAN's response into a dictionary.
+            response_dict = json.loads(response.read())
+            assert response_dict['success'] is True
+            return response_dict
+
+    return None
+
+
+def create_package(org, f, apikey, subgenre='all'):
     data = XML().parse_xml(f)
     data['md5'] = md5(f)
 
+    # return false and do not create package is subgenre is not what we want
+    if subgenre != 'all' and subgenre != data['subgenre']:
+        # print 'data subgenre: %s; given subgenre: %s' % (data['subgenre'], subgenre)
+        print 'Type is not %s, skipping!' % subgenre
+        return False
+    else:
+        print 'Type is %s' % data['subgenre']
+
+    # check if dataset exists and not modified
+    response_dict = get_package_by_id(data['name'], apikey=apikey)
+    old_md5 = ''
+    if response_dict:
+        print 'Existing data set, checking MD5...'
+        for extra in response_dict['result']['extras']:
+            if extra['key'] == 'MD5':
+                old_md5 = extra['value']
+        if old_md5 == data['md5']:
+            print 'MD5 identical, skipping!'
+            return True
+        else:
+            remove_all_created_package(response_dict, apikey)
+            print 'MD5 different, updating!'
+    else:
+        print 'New dataset, adding new!'
     # Create dataset
     # Put the details of the dataset we're going to create into a dict.
     dataset_dict = {
@@ -236,10 +285,10 @@ def create_package(org, f, apikey):
             #     except:
             #         pass
 
-    print data['location_names']
-    print data['location_geopoints']
+    # print data['location_names']
+    # print data['location_geopoints']
     if len(spatial_points) > 1:
-        print(spatial_points)
+        print 'MultiPoint: %s' % spatial_points
         dataset_dict['extras'].append(
             {
                 'key': 'spatial',
@@ -252,7 +301,7 @@ def create_package(org, f, apikey):
             }
         )
     elif len(spatial_points) == 1:
-        print spatial_points[0]
+        print 'Point: %s' % spatial_points[0]
         dataset_dict['extras'].append(
             {
                 'key': 'spatial',
@@ -296,42 +345,60 @@ def create_package(org, f, apikey):
     # package_create returns the created package as its result.
     created_package = response_dict['result']
     # pprint.pprint(created_package)
+    return True
 
 
 def __main__():
+    start = time.time()
     print 'start'
-    apikey = "5f38155e-1e79-4ac6-889f-ecea89991375"
+    apikey = 'e6c1b9c8-3a5f-44b9-9b12-b9f8f8c4ca36'
     wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     org = 'isebel_verhalenbank'
-    debug = True
-    qty = 100
+    debug = False
+    qty = 10
 
     # Get current dataset names
-    print 'before getting created package'
-    created_package = get_created_package(org, apikey)
-    print 'after getting created package'
+    # print 'before getting created package'
+    # created_package = get_created_package(org, apikey)
+    # print 'after getting created package'
     # Remove all the datasets
-    remove_all_created_package(created_package, apikey)
+    # remove_all_created_package(created_package, apikey)
 
-    created_package = get_all_created_package(apikey)
-    while len(created_package) > 0:
-        # created_package = get_created_package(org, apikey)
-        created_package = get_all_created_package(apikey)
+    # created_package = get_all_created_package(apikey)
+    created_package = get_created_package(org, apikey)
+    while len(created_package) > 0 and debug:
+        created_package = get_created_package(org, apikey)
+        # created_package = get_all_created_package(apikey)
         remove_all_created_package(created_package, apikey)
 
         print 'removing dataset'
     else:
         print 'removed dataset'
 
-    files = [join(wd, f) for f in listdir(wd) if isfile(join(wd, f))]
+    files = [join(wd, f) for f in sorted(listdir(wd)) if f.endswith('.xml') and isfile(join(wd, f))]
     print 'get file lists'
     counter = 0
+
     for f in files:
+        print '### start with file: %s ###' % f
+        result = None
+        try:
+            result = create_package(org, f, apikey=apikey, subgenre='sage')
+        except Exception as e:
+            print e.message
+            print 'error processing file!'
+        # print result
         if counter > qty - 1 and debug:
             break
-        counter += 1
-        print f
-        create_package(org, f, apikey=apikey)
+        if result:
+            counter += 1
+        print '### end with file: %s ###' % f
+    end = time.time()
+    elapsed = end - start
+    print '#### Overview ###'
+    print '#### Start at: %s' % start
+    print '#### Ends at: %s' % end
+    print '#### Time elapsed: %s' % elapsed
 
 
 __main__()
