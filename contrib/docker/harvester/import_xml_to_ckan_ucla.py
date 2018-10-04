@@ -102,6 +102,8 @@ class XML():
             index_list.append(index.text)
         self.data['index'] = ','.join(index_list)
 
+        self.data['name'] = "".join([c if c.isalnum() else "-" for c in str(self.data['identifier'])])
+
         keyword_list = list()
         for keyword in root.iter('keyWord'):
             keyword_list.append(keyword.text)

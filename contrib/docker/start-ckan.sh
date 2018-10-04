@@ -31,7 +31,7 @@ if [ "0" -eq "$?" ]; then
 fi
 
 # remove and copy the ssl certificate
-rm -fr ../../ssl/
+sudo rm -fr ../../ssl/
 echo "$?"
 if [ "0" -eq "$?" ]; then
     echo "removed successfully ssl"
