@@ -73,8 +73,12 @@ services:
     build:
       context: ../../
       dockerfile: contrib/docker/solr/Dockerfile
+      args:
+        - SOLR_VERSION=${SOLR_VERSION}
     ports:
       - "8983:8983"
+    environment:
+      - SOLR_VERSION=${SOLR_VERSION}
     volumes:
       # - solr-volume:/solr/data
       - solr-volume:/opt/solr/server/solr/ckan/data

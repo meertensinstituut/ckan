@@ -78,7 +78,7 @@ class XML():
 
         # Make the HTTP request.
         response = urllib2.urlopen(request)
-        assert response.code == 200
+        assert response.code == 200, 'geo coding error %s' % response.code
 
         # Use the json module to load CKAN's response into a dictionary.
         response_dict = json.loads(response.read())
@@ -148,7 +148,7 @@ def create_package(org, f, apikey):
     data['md5'] = md5(f)
 
     # check if dataset exists and not modified
-    response_dict = get_package_by_id(data['name'], apikey=apikey)
+    response_dict = get_package_by_id(data['identifier'].lower(), apikey=apikey)
     old_md5 = ''
     if response_dict:
         print 'Existing data set, checking MD5...'
@@ -306,19 +306,18 @@ def __main__():
     #     print f
     #     create_package(org, f, apikey=apikey)
 
-
-    # TODO: add md5 checkup and partial updates
     counter = 0
-
     for f in files:
         print '### start with file: %s ###' % f
+
         result = None
         # try:
         result = create_package(org, f, apikey=apikey)
+
         # except Exception as e:
         #     print e.message
         #     print 'error processing file!'
-        # print result
+        print result
         if counter > qty - 1 and debug:
             break
         if result:
@@ -330,6 +329,6 @@ def __main__():
     print '#### Start at: %s' % start
     print '#### Ends at: %s' % end
     print '#### Time elapsed: %s' % elapsed
-    # TODO: end
+
 
 __main__()
