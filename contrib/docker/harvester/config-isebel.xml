@@ -48,27 +48,41 @@
   </actions> -->
   
   <actions>
-    <format match="namespace" value="http://www.isebel.eu/OAI/2.0/oai_isebel/">
+    <!--<format match="namespace" value="http://www.isebel.eu/ns/isebel/">-->
+      <!--<action type="save" dir="oai" suffix=".xml"/>-->
+      <!--<action type="split"/>-->
+      <!--<action type="save" dir="rec" suffix=".xml"/>-->
+      <!--<action type="strip"/>-->
+      <!--<action type="save" dir="isebel" suffix=".xml"/>-->
+    <!--</format>-->
+    <!--<format match="namespace" value="http://www.isebel.eu/ns/isebel">-->
+      <!--<action type="save" dir="oai" suffix=".xml"/>-->
+      <!--<action type="split"/>-->
+      <!--<action type="save" dir="rec" suffix=".xml"/>-->
+      <!--<action type="strip"/>-->
+      <!--<action type="save" dir="isebel" suffix=".xml"/>-->
+    <!--</format>-->
+    <format match="prefix" value="isebel">
       <action type="save" dir="oai" suffix=".xml"/>
       <action type="split"/>
       <action type="save" dir="rec" suffix=".xml"/>
       <action type="strip"/>
       <action type="save" dir="isebel" suffix=".xml"/>
     </format>
-    <format match="namespace" value="http://www.isebel.eu/ns/isebel">
+    <format match="prefix" value="isebel_minimal">
       <action type="save" dir="oai" suffix=".xml"/>
       <action type="split"/>
       <action type="save" dir="rec" suffix=".xml"/>
       <action type="strip"/>
       <action type="save" dir="isebel" suffix=".xml"/>
     </format>
-    <format match="prefix" value="oai_hro">
-      <action type="save" dir="oai" suffix=".xml"/>
-      <action type="split"/>
-      <action type="save" dir="rec" suffix=".xml"/>
-      <action type="strip"/>
-      <action type="save" dir="isebel" suffix=".xml"/>
-    </format>
+    <!--<format match="namespace" value="http://www.isebel.eu/OAI/2.0/oai_isebel/">-->
+      <!--<action type="save" dir="oai" suffix=".xml"/>-->
+      <!--<action type="split"/>-->
+      <!--<action type="save" dir="rec" suffix=".xml"/>-->
+      <!--<action type="strip"/>-->
+      <!--<action type="save" dir="isebel" suffix=".xml"/>-->
+    <!--</format>-->
   </actions>
 
 

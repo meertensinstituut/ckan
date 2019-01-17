@@ -1,9 +1,13 @@
 FROM openjdk:8
-LABEL maintainer="Vic <qiqing.ding@di.huc.knaw.nl>"
+LABEL maintainer="Vic  Ding <qiqing.ding@di.huc.knaw.nl>"
 
-RUN apt-get update && apt-get install maven git vim net-tools -y && \
-    cd /tmp && git clone -b 0.5.x https://github.com/vicding-mi/oai-harvest-manager.git harvester_src && \
-    cd harvester_src && mvn clean install 
+ADD harvester_src /tmp/harvester_src
+
+RUN apt-get update && apt-get install maven git vim net-tools -y
+
+ADD log4j2.xml /tmp/harvester_src/src/main/resources/log4j2.xml
+RUN cd /tmp/harvester_src && mvn clean install -Dmaven.test.skip=true
+
 ADD do-harvester.sh /tmp/harvester_src/src/main/scripts/do-harvester.sh
 ADD run-harvester2.sh /tmp/harvester_src/src/main/scripts/run-harvester2.sh
 ADD config-isebel.xml /tmp/harvester_src/src/main/scripts/config-isebel.xml

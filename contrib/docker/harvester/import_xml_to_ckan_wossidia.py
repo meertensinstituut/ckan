@@ -1,56 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import urllib2
-import urllib
 import json
-import requests
 import xml.etree.ElementTree as et
-import hashlib
 from os import listdir
 from os.path import isfile, join
 
-
-
-def md5(fname):
-    hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
-
-
-def get_created_package(org, apikey):
-    request = urllib2.Request('http://ckan:5000/api/3/action/package_search?q=organization:%s' % org)
-    request.add_header('Authorization', apikey)
-
-    # Make the HTTP request.
-    response = urllib2.urlopen(request)
-    assert response.code == 200
-
-    # Use the json module to load CKAN's response into a dictionary.
-    response_dict = json.loads(response.read())
-    assert response_dict['success'] is True
-
-    # package_create returns the created package as its result.
-    results = response_dict['result']['results']
-    created_package = list()
-    for result in results:
-        created_package.append(result['name'])
-
-    return created_package
-
-
-def remove_all_created_package(created_package, apikey):
-    for i in created_package:
-        dataset_dict = {'id': i}
-        requests.post('http://ckan:5000/api/3/action/package_delete',
-                      data=dataset_dict,
-                      headers={"X-CKAN-API-Key": apikey})
-        # purge dataset
-        requests.post('http://ckan:5000/api/3/action/dataset_purge',
-                      data=dataset_dict,
-                      headers={"X-CKAN-API-Key": apikey})
-
+import import_xml_to_ckan_util as importlib
 
 class XML():
     isebel_list = ['identifier', 'title', 'subtitle']
@@ -95,7 +51,7 @@ class XML():
 def create_package(org, f, apikey):
     isebel_list = ['identifier', 'title', 'subtitle']
     data = XML().parse_xml(f)
-    data['md5'] = md5(f)
+    data['md5'] = importlib.md5(f)
 
     # Create dataset
     # Put the details of the dataset we're going to create into a dict.
@@ -144,7 +100,7 @@ def create_package(org, f, apikey):
         print e.message
 
     # Use the json module to dump the dictionary to a string for posting.
-    data_string = urllib.quote(json.dumps(dataset_dict))
+    data_string = urllib2.quote(json.dumps(dataset_dict))
 
     # We'll use the package_create function to create a new dataset.
     request = urllib2.Request(
@@ -168,23 +124,16 @@ def create_package(org, f, apikey):
 
 def __main__():
     print 'start'
-    apikey = "e6c1b9c8-3a5f-44b9-9b12-b9f8f8c4ca36"
+    apikey = importlib.apikey
     wd = '/var/harvester/oai-isebel/isebel_rostock'
     org = 'isebel_wossidia'
     debug = False
     qty = 100
 
-    # Get current dataset names
-    # print 'before getting created package'
-    # created_package = get_created_package(org, apikey)
-    # print 'after getting created package'
-    # Remove all the datasets
-    # remove_all_created_package(created_package, apikey)
-
-    created_package = get_created_package(org, apikey)
+    created_package = importlib.get_created_package(org, apikey)
     while len(created_package) > 0 and debug:
-        created_package = get_created_package(org, apikey)
-        remove_all_created_package(created_package, apikey)
+        created_package = importlib.get_created_package(org, apikey)
+        importlib.remove_all_created_package(created_package, apikey)
 
         print 'removing dataset'
     else:

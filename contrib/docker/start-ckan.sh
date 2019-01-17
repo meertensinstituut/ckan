@@ -1,5 +1,11 @@
 #!/bin/bash
-if [ ! -f .env ]; then
+
+echo "removing old harvester_src"
+sudo rm -rf harvester/harvester_src
+
+cp -a ../../../code_dev/harvester_src/. harvester/harvester_src/
+
+if [[ ! -f .env ]]; then
     echo "Creating new .env file! Please adapt it to your use case"
     cp .env.template .env
 fi
@@ -7,39 +13,39 @@ fi
 # remove and copy the plugins from the latest codes - ckanext-facet
 rm -fr ../../ckanext-facet/
 echo "$?"
-if [ "0" -eq "$?" ]; then
+if [[ "0" -eq "$?" ]]; then
     echo "removed successfully ckanext-facet"
 else
     echo "ckanext-facet not zero"
 fi
 cp -a ../../../code_dev/ckanext-facet/. ../../ckanext-facet/
-if [ "0" -eq "$?" ]; then
+if [[ "0" -eq "$?" ]]; then
     echo "copied successfully ckanext-facet"
 fi
 
 # remove and copy the plugins from the latest codes - ckanext-timeline
 rm -fr ../../ckanext-timeline/
 echo "$?"
-if [ "0" -eq "$?" ]; then
+if [[ "0" -eq "$?" ]]; then
     echo "removed successfully ckanext-timeline"
 else
     echo "ckanext-timeline not zero"
 fi
 cp -a ../../../code_dev/ckanext-timeline/. ../../ckanext-timeline/
-if [ "0" -eq "$?" ]; then
+if [[ "0" -eq "$?" ]]; then
     echo "copied successfully ckanext-timeline"
 fi
 
 # remove and copy the ssl certificate
 sudo rm -fr ../../ssl/
 echo "$?"
-if [ "0" -eq "$?" ]; then
+if [[ "0" -eq "$?" ]]; then
     echo "removed successfully ssl"
 else
     echo "ssl not zero"
 fi
 sudo cp -a /etc/letsencrypt/live/search.isebel.eu/. ../../ssl/
-if [ "0" -eq "$?" ]; then
+if [[ "0" -eq "$?" ]]; then
     echo "copied successfully ssl"
 fi
 
@@ -56,6 +62,8 @@ docker-compose up -d --build
 # docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add ckan_admin
 
 docker cp harvester/import_xml_to_ckan_ucla.py ckan:/var/harvester/import_xml_to_ckan_ucla.py
-docker cp harvester/import_xml_to_ckan.py ckan:/var/harvester/import_xml_to_ckan.py
+docker cp harvester/import_xml_to_ckan_verhalenbank.py ckan:/var/harvester/import_xml_to_ckan_verhalenbank.py
 docker cp harvester/import_xml_to_ckan_wossidia.py ckan:/var/harvester/import_xml_to_ckan_wossidia.py
+docker cp harvester/import_xml_to_ckan_util.py ckan:/var/harvester/import_xml_to_ckan_util.py
+docker cp ckanbashrc ckan:/usr/lib/ckan/.bashrc
 docker cp ../../../code_dev/translation-thesaurus ckan:/var/harvester/translation-thesaurus

@@ -1,89 +1,19 @@
 # -*- coding: utf-8 -*-
 import urllib2
-import urllib
 import json
-import requests
 import xml.etree.ElementTree as et
-import hashlib
-import datetime
 from os import listdir
 from os.path import isfile, join
 import time
 
-
-def isdate(date_text, date_format='%Y-%m-%d'):
-    try:
-        datetime.datetime.strptime(date_text, date_format)
-        return True
-    except ValueError:
-        # raise ValueError("Incorrect data format, should be YYYY-MM-DD")
-        return False
-
-
-def md5(fname):
-    hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
-
-
-def get_created_package(org, apikey):
-    request = urllib2.Request('http://ckan:5000/api/3/action/package_search?q=organization:%s' % org)
-    request.add_header('Authorization', apikey)
-
-    # Make the HTTP request.
-    response = urllib2.urlopen(request)
-    assert response.code == 200
-
-    # Use the json module to load CKAN's response into a dictionary.
-    response_dict = json.loads(response.read())
-    assert response_dict['success'] is True
-
-    # package_create returns the created package as its result.
-    results = response_dict['result']['results']
-    created_package = list()
-    for result in results:
-        created_package.append(result['name'])
-
-    return created_package
-
-
-def get_all_created_package(apikey):
-    request = urllib2.Request('http://ckan:5000/api/3/action/package_list')
-    request.add_header('Authorization', apikey)
-
-    # Make the HTTP request.
-    response = urllib2.urlopen(request)
-    assert response.code == 200
-
-    # Use the json module to load CKAN's response into a dictionary.
-    response_dict = json.loads(response.read())
-    assert response_dict['success'] is True
-
-    # package_create returns the created package as its result.
-    created_package = response_dict['result']
-
-    return created_package
-
-
-def remove_all_created_package(created_package, apikey):
-    for i in created_package:
-        dataset_dict = {'id': i}
-        requests.post('http://ckan:5000/api/3/action/package_delete',
-                      data=dataset_dict,
-                      headers={"X-CKAN-API-Key": apikey})
-        # purge dataset
-        requests.post('http://ckan:5000/api/3/action/dataset_purge',
-                      data=dataset_dict,
-                      headers={"X-CKAN-API-Key": apikey})
+import import_xml_to_ckan_util as importlib
 
 
 class XML():
     isebel_list = ['title', 'identifier', 'content', 'ref', 'type', 'subgenre']
     data = dict()
 
-    def get_element(self, tree, isebel_list = isebel_list):
+    def get_element(self, tree, isebel_list=isebel_list):
         for i in isebel_list:
             tmp = tree.find(i)
             self.data[i] = tmp.text if tmp is not None else None
@@ -117,22 +47,33 @@ class XML():
             self.data['location_names'] = list()
             self.data['location_geopoints'] = list()
             for geo_location in root.find('geoLocations'):
-                self.data['location_names'].append(geo_location.find('geoLocationPlace').text if geo_location.find('geoLocationPlace') is not None else '')
-                if geo_location.find('geoLocationPoint').find('pointLongitude') is not None and geo_location.find('geoLocationPoint').find('pointLatitude') is not None:
-                    self.data['location_geopoints'].append([float(geo_location.find('geoLocationPoint').find('pointLongitude').text), float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
+                self.data['location_names'].append(geo_location.find('geoLocationPlace').text if geo_location.find(
+                    'geoLocationPlace') is not None else '')
+
+                if geo_location.find('geoLocationPoint').find('pointLongitude') is not None and geo_location.find(
+                    'geoLocationPoint').find('pointLatitude') is not None:
+                    self.data['location_geopoints'].append(
+                        [float(geo_location.find('geoLocationPoint').find('pointLongitude').text),
+                         float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
                 location_id = geo_location.attrib['{http://www.w3.org/XML/1998/namespace}id']
 
                 self.data['location'].append(
                     {
-                        'location_name_%s' % location_id: geo_location.find('geoLocationPlace').text if geo_location.find('geoLocationPlace') is not None else '',
+                        'location_name_%s' % location_id: geo_location.find(
+                            'geoLocationPlace').text if geo_location.find('geoLocationPlace') is not None else '',
                         'location_id_%s' % location_id: location_id,
-                        'location_geopoint_%s' % location_id: [geo_location.find('geoLocationPoint').find('pointLongitude').text, geo_location.find('geoLocationPoint').find('pointLatitude').text] if geo_location.find('geoLocationPoint').find('pointLatitude') is not None else None
+                        'location_geopoint_%s' % location_id: [
+                            geo_location.find('geoLocationPoint').find('pointLongitude').text,
+                            geo_location.find('geoLocationPoint').find('pointLatitude').text] if geo_location.find(
+                            'geoLocationPoint').find('pointLatitude') is not None else None
                     }
                 )
 
                 # get geolocation in geojson (acutally as array, will json.dumps to json
                 if geo_location.find('geoLocationPoint').find('pointLatitude') is not None:
-                    self.data['spatial_points'].append([float(geo_location.find('geoLocationPoint').find('pointLongitude').text), float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
+                    self.data['spatial_points'].append(
+                        [float(geo_location.find('geoLocationPoint').find('pointLongitude').text),
+                         float(geo_location.find('geoLocationPoint').find('pointLatitude').text)])
 
         # get person data
         self.data['person'] = []
@@ -152,9 +93,9 @@ class XML():
 
         # get date
         if root.find('date') is not None:
-            if isdate(root.find('date').text[:10]):
+            if importlib.isdate(root.find('date').text[:10]):
                 self.data['date'] = root.find('date').text[:10]
-            elif isdate(root.find('date').text[:8], '%y-%m-%d'):
+            elif importlib.isdate(root.find('date').text[:8], '%y-%m-%d'):
                 self.data['date'] = '19%s' % root.find('date').text[:8]
             else:
                 self.data['date'] = None
@@ -172,30 +113,9 @@ class XML():
         return self.data
 
 
-def get_package_by_id(id, apikey):
-    request = urllib2.Request('http://ckan:5000/api/3/action/package_show?id=%s' % id)
-    request.add_header('Authorization', apikey)
-
-    # Make the HTTP request.
-    response = None
-    try:
-        response = urllib2.urlopen(request)
-    except Exception as e:
-        print e.message
-
-    if response:
-        if response.code == 200:
-            # Use the json module to load CKAN's response into a dictionary.
-            response_dict = json.loads(response.read())
-            assert response_dict['success'] is True
-            return response_dict
-
-    return None
-
-
 def create_package(org, f, apikey, subgenre='all'):
     data = XML().parse_xml(f)
-    data['md5'] = md5(f)
+    data['md5'] = importlib.md5(f)
 
     # return false and do not create package is subgenre is not what we want
     if subgenre != 'all' and subgenre != data['subgenre']:
@@ -206,7 +126,7 @@ def create_package(org, f, apikey, subgenre='all'):
         print 'Type is %s' % data['subgenre']
 
     # check if dataset exists and not modified
-    response_dict = get_package_by_id(data['name'], apikey=apikey)
+    response_dict = importlib.get_package_by_id(data['name'], apikey=apikey)
     old_md5 = ''
     if response_dict:
         print 'Existing data set, checking MD5...'
@@ -217,7 +137,7 @@ def create_package(org, f, apikey, subgenre='all'):
             print 'MD5 identical, skipping!'
             return True
         else:
-            remove_all_created_package(response_dict, apikey)
+            importlib.remove_all_created_package(response_dict, apikey)
             print 'MD5 different, updating!'
     else:
         print 'New dataset, adding new!'
@@ -325,7 +245,7 @@ def create_package(org, f, apikey, subgenre='all'):
     # exit(dataset_dict['extras'])
 
     # Use the json module to dump the dictionary to a string for posting.
-    data_string = urllib.quote(json.dumps(dataset_dict))
+    data_string = urllib2.quote(json.dumps(dataset_dict))
 
     # We'll use the package_create function to create a new dataset.
     request = urllib2.Request(
@@ -351,11 +271,20 @@ def create_package(org, f, apikey, subgenre='all'):
 def __main__():
     start = time.time()
     print 'start'
-    apikey = 'e6c1b9c8-3a5f-44b9-9b12-b9f8f8c4ca36'
+    org = 'verhalenbank'
+    # if not org Create it
+    if not importlib.org_exists(org):
+        print 'organization [%s] does not exist. Creating!' % org
+        if importlib.create_org(org):
+            print 'organization [%s] created!' % org
+        else:
+            exit('organization [%s] cannot be created!' % org)
+
+    apikey = importlib.apikey
     wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     org = 'isebel_verhalenbank'
-    debug = False
-    qty = 10
+    debug = True
+    qty = 100
 
     # Get current dataset names
     # print 'before getting created package'
@@ -365,11 +294,11 @@ def __main__():
     # remove_all_created_package(created_package, apikey)
 
     # created_package = get_all_created_package(apikey)
-    created_package = get_created_package(org, apikey)
+    created_package = importlib.get_created_package(org, apikey)
     while len(created_package) > 0 and debug:
-        created_package = get_created_package(org, apikey)
+        created_package = importlib.get_created_package(org, apikey)
         # created_package = get_all_created_package(apikey)
-        remove_all_created_package(created_package, apikey)
+        importlib.remove_all_created_package(created_package, apikey)
 
         print 'removing dataset'
     else:
