@@ -1,22 +1,55 @@
 # -*- coding: utf-8 -*-
 import urllib2
 import json
+from pprint import pprint
+
 import requests
 import hashlib
 import datetime
 
-apikey = '78bd45dd-cc0c-443a-95f5-6edde15a24aa'
+apikey = 'c7014a52-f739-4eef-9931-bca86e581d06'
 orgs = {
-    'verhalenbank': ['Verhalenbank', 'verhalenbank'],
+    'meertens': ['Meertens Institute', 'meertens'],
     'ucla': ['UCLA', 'ucla'],
     'wossidia': ['Wossidia', 'wossidia']
 }
+debug = False
+qty = 99999
+
+
+def set_title_homepage_style():
+    dataset_dict = {
+        'ckan.site_title': 'ISEBEL',
+        'ckan.homepage_style': 2
+    }
+
+    # Use the json module to dump the dictionary to a string for posting.
+    data_string = urllib2.quote(json.dumps(dataset_dict))
+
+    # We'll use the package_create function to create a new dataset.
+    request = urllib2.Request(
+        'http://ckan:5000/api/3/action/config_option_update')
+
+    # Creating a dataset requires an authorization header.
+    request.add_header('Authorization', apikey)
+
+    # Make the HTTP request.
+    response = urllib2.urlopen(request, data_string)
+    assert response.code == 200
+
+    # Use the json module to load CKAN's response into a dictionary.
+    response_dict = json.loads(response.read())
+    if response_dict['success'] is True:
+        return True
+    else:
+        return False
 
 
 def create_org(orgKey):
     dataset_dict = {
         'title': orgs[orgKey][0],
-        'name': orgs[orgKey][1]
+        'name': orgs[orgKey][1],
+        'id': orgs[orgKey][1]
     }
 
     # Use the json module to dump the dictionary to a string for posting.
@@ -139,6 +172,8 @@ def get_package_by_id(id, apikey):
             # Use the json module to load CKAN's response into a dictionary.
             response_dict = json.loads(response.read())
             assert response_dict['success'] is True
+
+            pprint(response_dict)
             return response_dict
 
     return None

@@ -1,9 +1,10 @@
-ARG SOLR_VERSION=6.6.2
 FROM solr:6.6.2
 LABEL maintainer="Open Knowledge"
+ARG SOLR_VERSION=6.6.2
 
 # Enviroment
 ENV SOLR_CORE ckan
+ENV SOLR_HEAP=2048m
 
 # Create Directories
 RUN mkdir -p /opt/solr/server/solr/$SOLR_CORE/conf
