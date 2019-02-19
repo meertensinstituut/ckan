@@ -49,8 +49,8 @@ class XML:
             if lang not in content_dict.keys():
                 content_dict[lang] = content.text.encode('utf-8')
 
-            if lang == 'deu':
-                self.data['text'] = content.text.encode('utf-8')
+            # if lang == 'deu':
+            self.data['text'] = content.text.encode('utf-8')
 
         self.data['content'] = content_dict
 
@@ -285,7 +285,7 @@ def __main__():
 
     apikey = importlib.apikey
     wd = '/var/harvester/oai-isebel/isebel_rostock'
-    debug = importlib.debug
+    debug = True  # importlib.debug
     qty = importlib.qty
 
     print('getting created packages from current organization!')
@@ -294,7 +294,7 @@ def __main__():
     while len(created_package) > 0 and debug:
         created_package = importlib.get_created_package(org, apikey)
         importlib.remove_all_created_package(created_package, apikey)
-        print 'removing dataset %s' % created_package
+        print 'removing dataset %s' % (created_package)
     else:
         print 'removed dataset'
 

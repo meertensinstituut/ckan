@@ -73,7 +73,6 @@ def create_org(orgKey):
     else:
         return False
 
-
 def org_exists(orgKey):
     print 'http://ckan:5000/api/3/action/organization_show?id=%s' % orgKey
     request = urllib2.Request('http://ckan:5000/api/3/action/organization_show?id=%s' % orgKey)
@@ -105,8 +104,8 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 
-def get_created_package(org, apikey):
-    request = urllib2.Request('http://ckan:5000/api/3/action/package_search?q=organization:%s' % org)
+def get_created_package(org, apikey, maxrows=1000):
+    request = urllib2.Request('http://ckan:5000/api/3/action/package_search?q=organization:%s&rows=%s' % (org, maxrows))
     request.add_header('Authorization', apikey)
 
     # Make the HTTP request.
