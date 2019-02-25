@@ -67,7 +67,7 @@ RUN . $CKAN_VENV/bin/activate && ls -la $CKAN_VENV/src/ckan && cd $CKAN_VENV/src
     ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git#egg=ckanext-spatial" && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckanext-spatial/pip-requirements.txt  && \
     cd $CKAN_VENV/src/ckanext-spatial && python setup.py develop && \
-    # ckan-pip install ckanext-geoview && \
+     ckan-pip install ckanext-geoview && \
     cd $CKAN_VENV/src/ && git clone https://github.com/ckan/ckanext-geoview.git && cd $CKAN_VENV/src/ckanext-geoview && python setup.py develop && \
     chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH && \
     deactivate

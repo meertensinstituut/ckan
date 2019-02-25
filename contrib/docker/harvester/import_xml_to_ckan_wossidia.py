@@ -285,7 +285,7 @@ def __main__():
 
     apikey = importlib.apikey
     wd = '/var/harvester/oai-isebel/isebel_rostock'
-    debug = True  # importlib.debug
+    debug = importlib.debug
     qty = importlib.qty
 
     print('getting created packages from current organization!')
