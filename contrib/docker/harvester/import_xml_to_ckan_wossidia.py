@@ -134,18 +134,19 @@ def create_package(org, f, apikey):
 
     old_md5 = ''
     if response_dict:
-        print 'Existing data set, checking MD5...'
+        print('Existing data set, checking MD5...')
         for extra in response_dict['result']['extras']:
             if extra['key'] == 'MD5':
                 old_md5 = extra['value']
         if old_md5 == data['md5']:
-            print 'MD5 identical, skipping!'
+            print('MD5 identical, skipping!')
             return True
         else:
+            print('removing existing package [%s]' % response_dict)
             importlib.remove_all_created_package(response_dict, apikey)
-            print 'MD5 different, updating!'
+            print('MD5 different, updating!')
     else:
-        print 'New dataset, adding new!'
+        print('New dataset, adding new!')
 
     # Create dataset
     # Put the details of the dataset we're going to create into a dict.
@@ -285,7 +286,7 @@ def __main__():
 
     apikey = importlib.apikey
     wd = '/var/harvester/oai-isebel/isebel_rostock'
-    debug = importlib.debug
+    debug = True  # importlib.debug
     qty = importlib.qty
 
     print('getting created packages from current organization!')
@@ -307,11 +308,16 @@ def __main__():
         print '### start with file: %s ###' % f
         print '### counter: %s' % counter
         counter += 1
-        result = create_package(org, f, apikey=apikey)
-
+        try:
+            result = create_package(org, f, apikey=apikey)
+        except Exception as e:
+            print(e.message)
+            print('error processing file!')
         # print result
         if counter > qty - 1 and debug:
             break
+        if result:
+            counter += 1
         print '### end with file: %s ###' % f
     end = time.time()
     elapsed = end - start
