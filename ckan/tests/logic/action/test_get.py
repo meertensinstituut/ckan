@@ -18,6 +18,7 @@ from ckan.lib.search.common import SearchError
 
 eq = nose.tools.eq_
 ok = nose.tools.ok_
+assert_not_in = nose.tools.assert_not_in
 assert_raises = nose.tools.assert_raises
 
 
@@ -162,6 +163,36 @@ class TestGroupList(helpers.FunctionalTestBase):
         assert 'groups' not in group_list[0]
         assert 'users' not in group_list[0]
         assert 'datasets' not in group_list[0]
+
+    def _create_bulk_groups(self, name, count):
+        from ckan import model
+        model.repo.new_revision()
+        groups = [model.Group(name='{}_{}'.format(name, i))
+                  for i in range(count)]
+        model.Session.add_all(groups)
+        model.repo.commit_and_remove()
+
+    def test_limit_default(self):
+        self._create_bulk_groups('group_default', 1010)
+        results = helpers.call_action('group_list')
+        eq(len(results), 1000)  # i.e. default value
+
+    @helpers.change_config('ckan.group_and_organization_list_max', '5')
+    def test_limit_configured(self):
+        self._create_bulk_groups('group_default', 7)
+        results = helpers.call_action('group_list')
+        eq(len(results), 5)  # i.e. configured limit
+
+    def test_all_fields_limit_default(self):
+        self._create_bulk_groups('org_all_fields_default', 30)
+        results = helpers.call_action('group_list', all_fields=True)
+        eq(len(results), 25)  # i.e. default value
+
+    @helpers.change_config('ckan.group_and_organization_list_all_fields_max', '5')
+    def test_all_fields_limit_configured(self):
+        self._create_bulk_groups('org_all_fields_default', 30)
+        results = helpers.call_action('group_list', all_fields=True)
+        eq(len(results), 5)  # i.e. configured limit
 
     def test_group_list_extras_returned(self):
 
@@ -393,6 +424,17 @@ class TestGroupShow(helpers.FunctionalTestBase):
                                                  in group['packages']], (
                 "group_show() should never show private datasets")
 
+    @helpers.change_config('ckan.search.rows_max', '5')
+    def test_package_limit_configured(self):
+        group = factories.Group()
+        for i in range(7):
+            factories.Dataset(groups=[{'id': group['id']}])
+        id = group['id']
+
+        results = helpers.call_action('group_show', id=id,
+                                      include_datasets=1)
+        eq(len(results['packages']), 5)  # i.e. ckan.search.rows_max
+
 
 class TestOrganizationList(helpers.FunctionalTestBase):
 
@@ -450,6 +492,37 @@ class TestOrganizationList(helpers.FunctionalTestBase):
 
         assert (sorted(org_list) ==
                 sorted([g['name'] for g in [org2]])), '{}'.format(org_list)
+
+    def _create_bulk_orgs(self, name, count):
+        from ckan import model
+        model.repo.new_revision()
+        orgs = [model.Group(name='{}_{}'.format(name, i), is_organization=True,
+                            type='organization')
+                for i in range(count)]
+        model.Session.add_all(orgs)
+        model.repo.commit_and_remove()
+
+    def test_limit_default(self):
+        self._create_bulk_orgs('org_default', 1010)
+        results = helpers.call_action('organization_list')
+        eq(len(results), 1000)  # i.e. default value
+
+    @helpers.change_config('ckan.group_and_organization_list_max', '5')
+    def test_limit_configured(self):
+        self._create_bulk_orgs('org_default', 7)
+        results = helpers.call_action('organization_list')
+        eq(len(results), 5)  # i.e. configured limit
+
+    def test_all_fields_limit_default(self):
+        self._create_bulk_orgs('org_all_fields_default', 30)
+        results = helpers.call_action('organization_list', all_fields=True)
+        eq(len(results), 25)  # i.e. default value
+
+    @helpers.change_config('ckan.group_and_organization_list_all_fields_max', '5')
+    def test_all_fields_limit_configured(self):
+        self._create_bulk_orgs('org_all_fields_default', 30)
+        results = helpers.call_action('organization_list', all_fields=True)
+        eq(len(results), 5)  # i.e. configured limit
 
 
 class TestOrganizationShow(helpers.FunctionalTestBase):
@@ -522,6 +595,17 @@ class TestOrganizationShow(helpers.FunctionalTestBase):
         assert org_dict['packages'][0]['name'] == 'dataset_1'
         assert org_dict['package_count'] == 1
 
+    @helpers.change_config('ckan.search.rows_max', '5')
+    def test_package_limit_configured(self):
+        org = factories.Organization()
+        for i in range(7):
+            factories.Dataset(owner_org=org['id'])
+        id = org['id']
+
+        results = helpers.call_action('organization_show', id=id,
+                                      include_datasets=1)
+        eq(len(results['packages']), 5)  # i.e. ckan.search.rows_max
+
 
 class TestUserList(helpers.FunctionalTestBase):
 
@@ -583,6 +667,18 @@ class TestUserList(helpers.FunctionalTestBase):
         assert len(got_users) == 1
         got_user = got_users[0]
         assert got_user == user['name']
+
+    def test_user_list_filtered_by_email(self):
+
+        user_a = factories.User(email='a@example.com')
+        factories.User(email='b@example.com')
+
+        got_users = helpers.call_action('user_list', email='a@example.com',
+                                        all_fields=False)
+
+        assert len(got_users) == 1
+        got_user = got_users[0]
+        assert got_user == user_a['name']
 
 
 class TestUserShow(helpers.FunctionalTestBase):
@@ -840,9 +936,38 @@ class TestPackageAutocomplete(helpers.FunctionalTestBase):
         dataset2 = factories.Dataset(user=user, owner_org=org['name'],
                                      private=True, title='Some private stuff')
 
-        package_list = helpers.call_action('package_autocomplete',
-                                           q='some')
+        package_list = helpers.call_action(
+            'package_autocomplete', context={'ignore_auth': False}, q='some'
+        )
         eq(len(package_list), 1)
+
+    def test_package_autocomplete_does_return_private_datasets_from_my_org(self):
+        user = factories.User()
+        org = factories.Organization(
+            users=[{'name': user['name'], 'capacity': 'member'}]
+        )
+        factories.Dataset(
+            user=user, owner_org=org['id'], title='Some public stuff'
+        )
+        factories.Dataset(
+            user=user, owner_org=org['id'], private=True,
+            title='Some private stuff'
+        )
+        package_list = helpers.call_action(
+            'package_autocomplete',
+            context={'user': user['name'], 'ignore_auth': False},
+            q='some'
+        )
+        eq(len(package_list), 2)
+
+    def test_package_autocomplete_works_for_the_middle_part_of_title(self):
+        factories.Dataset(title='Some public stuff')
+        factories.Dataset(title='Some random stuff')
+
+        package_list = helpers.call_action('package_autocomplete', q='bli')
+        eq(len(package_list), 1)
+        package_list = helpers.call_action('package_autocomplete', q='tuf')
+        eq(len(package_list), 2)
 
 
 class TestPackageSearch(helpers.FunctionalTestBase):
@@ -857,12 +982,17 @@ class TestPackageSearch(helpers.FunctionalTestBase):
         eq(search_result['count'], 1)
 
     def test_search_fl(self):
-        factories.Dataset(title='Rivers', name='test_ri')
-        factories.Dataset(title='Lakes')
+        d1 = factories.Dataset(title='Rivers', name='test_ri')
+        d2 = factories.Dataset(title='Lakes')
 
         search_result = helpers.call_action('package_search', q='rivers', fl=['title', 'name'])
-
         eq(search_result['results'], [{'title': 'Rivers', 'name': 'test_ri'}])
+
+        search_result = helpers.call_action('package_search', q='rivers', fl='title,name')
+        eq(search_result['results'], [{'title': 'Rivers', 'name': 'test_ri'}])
+
+        search_result = helpers.call_action('package_search', q='rivers', fl=['id'])
+        eq(search_result['results'], [{'id': d1['id']}])
 
     def test_search_all(self):
         factories.Dataset(title='Rivers')
@@ -886,6 +1016,25 @@ class TestPackageSearch(helpers.FunctionalTestBase):
         # SOLR doesn't like that we didn't specify 'asc' or 'desc'
         # SOLR error is 'Missing sort order' or 'Missing_sort_order',
         # depending on the solr version.
+
+    def _create_bulk_datasets(self, name, count):
+        from ckan import model
+        model.repo.new_revision()
+        pkgs = [model.Package(name='{}_{}'.format(name, i))
+                for i in range(count)]
+        model.Session.add_all(pkgs)
+        model.repo.commit_and_remove()
+
+    def test_rows_returned_default(self):
+        self._create_bulk_datasets('rows_default', 11)
+        results = logic.get_action('package_search')({}, {})
+        eq(len(results['results']), 10)  # i.e. 'rows' default value
+
+    @helpers.change_config('ckan.search.rows_max', '12')
+    def test_rows_returned_limited(self):
+        self._create_bulk_datasets('rows_limited', 14)
+        results = logic.get_action('package_search')({}, {'rows': '15'})
+        eq(len(results['results']), 12)  # i.e. ckan.search.rows_max
 
     def test_facets(self):
         org = factories.Organization(name='test-org-facet', title='Test Org')
@@ -1267,10 +1416,26 @@ class TestPackageSearch(helpers.FunctionalTestBase):
         '''
         logic.get_action('package_search')({}, dict(q='anything'))
 
-    def test_custom_schema_returned(self):
-        if not p.plugin_loaded('example_idatasetform'):
-            p.load('example_idatasetform')
+    def test_local_parameters_not_supported(self):
+        nose.tools.assert_raises(
+            SearchError,
+            helpers.call_action,
+            'package_search',
+            q='{!child of="content_type:parentDoc"}')
 
+
+class TestPackageAutocompleteWithDatasetForm(helpers.FunctionalTestBase):
+    @classmethod
+    def _apply_config_changes(cls, cfg):
+        cfg['ckan.plugins'] = 'example_idatasetform'
+
+    @classmethod
+    def teardown_class(cls):
+        super(TestPackageAutocompleteWithDatasetForm, cls).teardown_class()
+        if p.plugin_loaded('example_idatasetform'):
+            p.unload('example_idatasetform')
+
+    def test_custom_schema_returned(self):
         dataset1 = factories.Dataset(custom_text='foo')
 
         query = helpers.call_action('package_search',
@@ -1279,13 +1444,7 @@ class TestPackageSearch(helpers.FunctionalTestBase):
         eq(query['results'][0]['id'], dataset1['id'])
         eq(query['results'][0]['custom_text'], 'foo')
 
-        p.unload('example_idatasetform')
-
     def test_custom_schema_not_returned(self):
-
-        if not p.plugin_loaded('example_idatasetform'):
-            p.load('example_idatasetform')
-
         dataset1 = factories.Dataset(custom_text='foo')
 
         query = helpers.call_action('package_search',
@@ -1296,16 +1455,6 @@ class TestPackageSearch(helpers.FunctionalTestBase):
         assert 'custom_text' not in query['results'][0]
         eq(query['results'][0]['extras'][0]['key'], 'custom_text')
         eq(query['results'][0]['extras'][0]['value'], 'foo')
-
-        p.unload('example_idatasetform')
-
-    def test_local_parameters_not_supported(self):
-
-        nose.tools.assert_raises(
-            SearchError,
-            helpers.call_action,
-            'package_search',
-            q='{!child of="content_type:parentDoc"}')
 
 
 class TestBadLimitQueryParameters(helpers.FunctionalTestBase):
@@ -1322,11 +1471,6 @@ class TestBadLimitQueryParameters(helpers.FunctionalTestBase):
             'group_activity_list',
             'organization_activity_list',
             'recently_changed_packages_activity_list',
-            'user_activity_list_html',
-            'package_activity_list_html',
-            'group_activity_list_html',
-            'organization_activity_list_html',
-            'recently_changed_packages_activity_list_html',
             'current_package_list_with_resources',
         ]
         for action in actions:
@@ -1628,7 +1772,8 @@ class TestOrganizationListForUser(helpers.FunctionalTestBase):
                             capacity='admin')
 
         # Delete the organization.
-        helpers.call_action('organization_delete', id=organization['id'])
+        helpers.call_action('organization_delete', id=organization['id'],
+                            context=context)
 
         organizations = helpers.call_action('organization_list_for_user',
                                             context=context)
@@ -2154,6 +2299,9 @@ class TestFollow(helpers.FunctionalTestBase):
 
 
 class TestStatusShow(helpers.FunctionalTestBase):
+    @classmethod
+    def _apply_config_changes(cls, cfg):
+        cfg['ckan.plugins'] = 'stats'
 
     def test_status_show(self):
 
@@ -2219,3 +2367,1192 @@ class TestJobShow(helpers.FunctionalRQTestBase):
         Test showing a not existing job.
         '''
         helpers.call_action(u'job_show', id=u'does-not-exist')
+
+
+def _clear_activities():
+    from ckan import model
+    model.Session.query(model.ActivityDetail).delete()
+    model.Session.query(model.Activity).delete()
+    model.Session.flush()
+
+
+class TestPackageActivityList(helpers.FunctionalTestBase):
+    def test_create_dataset(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+        assert_not_in('extras', activities[0]['data']['package'])
+
+    def test_change_dataset(self):
+        user = factories.User()
+        _clear_activities()
+        dataset = factories.Dataset(user=user)
+        original_title = dataset['title']
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package', 'new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+        eq(activities[0]['data']['package']['title'],
+           'Dataset with changed title')
+
+        # the old dataset still has the old title
+        eq(activities[1]['activity_type'], 'new package')
+        eq(activities[1]['data']['package']['title'], original_title)
+
+    def test_change_dataset_add_extra(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        dataset['extras'].append(dict(key='rating', value='great'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+        assert_not_in('extras', activities[0]['data']['package'])
+
+    def test_change_dataset_change_extra(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user, extras=[
+            dict(key='rating', value='great')])
+        _clear_activities()
+        dataset['extras'][0] = dict(key='rating', value='ok')
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+        assert_not_in('extras', activities[0]['data']['package'])
+
+    def test_change_dataset_delete_extra(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user, extras=[
+            dict(key='rating', value='great')])
+        _clear_activities()
+        dataset['extras'] = []
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+        assert_not_in('extras', activities[0]['data']['package'])
+
+    def test_change_dataset_add_resource(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        resource = factories.Resource(package_id=dataset['id'], user=user)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+        # NB the detail is not included - that is only added in by
+        # activity_list_to_html()
+
+    def test_change_dataset_change_resource(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user, resources=[
+            dict(url='https://example.com/foo.csv', format='csv')])
+        _clear_activities()
+        dataset['resources'][0]['format'] = 'pdf'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset_delete_resource(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user, resources=[
+            dict(url='https://example.com/foo.csv', format='csv')])
+        _clear_activities()
+        dataset['resources'] = []
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset_add_tag(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        dataset['tags'].append(dict(name='checked'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_delete_tag_from_dataset(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user, tags=[dict(name='checked')])
+        _clear_activities()
+        dataset['tags'] = []
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_delete_dataset(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_private_dataset_has_no_activity(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(private=True,
+                                    owner_org=org['id'], user=user)
+        dataset['tags'] = []
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           [])
+
+    def test_private_dataset_delete_has_no_activity(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(private=True,
+                                    owner_org=org['id'], user=user)
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('package_activity_list',
+                                         id=dataset['id'])
+        eq([activity['activity_type'] for activity in activities],
+           [])
+
+    def _create_bulk_package_activities(self, count):
+        dataset = factories.Dataset()
+        from ckan import model
+        objs = [
+            model.Activity(
+                user_id=None, object_id=dataset['id'], revision_id=None,
+                activity_type=None, data=None)
+            for i in range(count)]
+        model.Session.add_all(objs)
+        model.repo.commit_and_remove()
+        return dataset['id']
+
+    def test_limit_default(self):
+        id = self._create_bulk_package_activities(35)
+        results = helpers.call_action('package_activity_list', id=id)
+        eq(len(results), 31)  # i.e. default value
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    def test_limit_configured(self):
+        id = self._create_bulk_package_activities(7)
+        results = helpers.call_action('package_activity_list', id=id)
+        eq(len(results), 5)  # i.e. ckan.activity_list_limit
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    @helpers.change_config('ckan.activity_list_limit_max', '7')
+    def test_limit_hits_max(self):
+        id = self._create_bulk_package_activities(9)
+        results = helpers.call_action('package_activity_list', id=id, limit='9')
+        eq(len(results), 7)  # i.e. ckan.activity_list_limit_max
+
+
+class TestUserActivityList(helpers.FunctionalTestBase):
+    def test_create_user(self):
+        user = factories.User()
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new user'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], user['id'])
+
+    def test_create_dataset(self):
+        user = factories.User()
+        _clear_activities()
+        dataset = factories.Dataset(user=user)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_dataset_changed_by_another_user(self):
+        user = factories.User()
+        another_user = factories.Sysadmin()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        dataset['extras'].append(dict(key='rating', value='great'))
+        helpers.call_action(
+            'package_update', context={'user': another_user['name']}, **dataset)
+
+        # the user might have created the dataset, but a change by another
+        # user does not show on the user's activity stream
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           [])
+
+    def test_change_dataset_add_extra(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        dataset['extras'].append(dict(key='rating', value='great'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset_add_tag(self):
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        dataset['tags'].append(dict(name='checked'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_create_group(self):
+        user = factories.User()
+        _clear_activities()
+        group = factories.Group(user=user)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new group'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], group['id'])
+        eq(activities[0]['data']['group']['name'], group['name'])
+
+    def test_delete_group_using_group_delete(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        _clear_activities()
+        helpers.call_action(
+            'group_delete', context={'user': user['name']}, **group)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted group'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], group['id'])
+        eq(activities[0]['data']['group']['name'], group['name'])
+
+    def test_delete_group_by_updating_state(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        _clear_activities()
+        group['state'] = 'deleted'
+        helpers.call_action(
+            'group_update', context={'user': user['name']}, **group)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted group'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], group['id'])
+        eq(activities[0]['data']['group']['name'], group['name'])
+
+    def test_create_organization(self):
+        user = factories.User()
+        _clear_activities()
+        org = factories.Organization(user=user)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new organization'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], org['id'])
+        eq(activities[0]['data']['group']['name'], org['name'])
+
+    def test_delete_org_using_organization_delete(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        helpers.call_action(
+            'organization_delete', context={'user': user['name']}, **org)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted organization'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], org['id'])
+        eq(activities[0]['data']['group']['name'], org['name'])
+
+    def test_delete_org_by_updating_state(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        org['state'] = 'deleted'
+        helpers.call_action(
+            'organization_update', context={'user': user['name']}, **org)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted organization'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], org['id'])
+        eq(activities[0]['data']['group']['name'], org['name'])
+
+    def _create_bulk_user_activities(self, count):
+        user = factories.User()
+        from ckan import model
+        objs = [
+            model.Activity(
+                user_id=user['id'], object_id=None, revision_id=None,
+                activity_type=None, data=None)
+            for i in range(count)]
+        model.Session.add_all(objs)
+        model.repo.commit_and_remove()
+        return user['id']
+
+    def test_limit_default(self):
+        id = self._create_bulk_user_activities(35)
+        results = helpers.call_action('user_activity_list', id=id)
+        eq(len(results), 31)  # i.e. default value
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    def test_limit_configured(self):
+        id = self._create_bulk_user_activities(7)
+        results = helpers.call_action('user_activity_list', id=id)
+        eq(len(results), 5)  # i.e. ckan.activity_list_limit
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    @helpers.change_config('ckan.activity_list_limit_max', '7')
+    def test_limit_hits_max(self):
+        id = self._create_bulk_user_activities(9)
+        results = helpers.call_action('user_activity_list', id=id, limit='9')
+        eq(len(results), 7)  # i.e. ckan.activity_list_limit_max
+
+
+class TestGroupActivityList(helpers.FunctionalTestBase):
+    def test_create_group(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new group'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], group['id'])
+        eq(activities[0]['data']['group']['name'], group['name'])
+
+    def test_change_group(self):
+        user = factories.User()
+        _clear_activities()
+        group = factories.Group(user=user)
+        original_title = group['title']
+        group['title'] = 'Group with changed title'
+        helpers.call_action(
+            'group_update', context={'user': user['name']}, **group)
+
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed group', 'new group'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], group['id'])
+        eq(activities[0]['data']['group']['name'], group['name'])
+        eq(activities[0]['data']['group']['title'],
+           'Group with changed title')
+
+        # the old group still has the old title
+        eq(activities[1]['activity_type'], 'new group')
+        eq(activities[1]['data']['group']['title'], original_title)
+
+    def test_create_dataset(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(groups=[{'id': group['id']}], user=user)
+
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(groups=[{'id': group['id']}], user=user)
+        original_title = dataset['title']
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package', 'new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+        # the old dataset still has the old title
+        eq(activities[1]['activity_type'], 'new package')
+        eq(activities[1]['data']['package']['title'], original_title)
+
+    def test_change_dataset_add_extra(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        dataset = factories.Dataset(groups=[{'id': group['id']}], user=user)
+        _clear_activities()
+        dataset['extras'].append(dict(key='rating', value='great'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset_add_tag(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        dataset = factories.Dataset(groups=[{'id': group['id']}], user=user)
+        _clear_activities()
+        dataset['tags'].append(dict(name='checked'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_delete_dataset(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        dataset = factories.Dataset(groups=[{'id': group['id']}], user=user)
+        _clear_activities()
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset_that_used_to_be_in_the_group(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        dataset = factories.Dataset(groups=[{'id': group['id']}], user=user)
+        # remove the dataset from the group
+        dataset['groups'] = []
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+        _clear_activities()
+        # edit the dataset
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        # dataset change should not show up in its former group
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities], [])
+
+    def test_delete_dataset_that_used_to_be_in_the_group(self):
+        user = factories.User()
+        group = factories.Group(user=user)
+        dataset = factories.Dataset(groups=[{'id': group['id']}], user=user)
+        # remove the dataset from the group
+        dataset['groups'] = []
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+        _clear_activities()
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+
+        # NOTE:
+        # ideally the dataset's deletion would not show up in its old group
+        # but it can't be helped without _group_activity_query getting very
+        # complicated
+        activities = helpers.call_action('group_activity_list',
+                                         id=group['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def _create_bulk_group_activities(self, count):
+        group = factories.Group()
+        from ckan import model
+        objs = [
+            model.Activity(
+                user_id=None, object_id=group['id'], revision_id=None,
+                activity_type=None, data=None)
+            for i in range(count)]
+        model.Session.add_all(objs)
+        model.repo.commit_and_remove()
+        return group['id']
+
+    def test_limit_default(self):
+        id = self._create_bulk_group_activities(35)
+        results = helpers.call_action('group_activity_list', id=id)
+        eq(len(results), 31)  # i.e. default value
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    def test_limit_configured(self):
+        id = self._create_bulk_group_activities(7)
+        results = helpers.call_action('group_activity_list', id=id)
+        eq(len(results), 5)  # i.e. ckan.activity_list_limit
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    @helpers.change_config('ckan.activity_list_limit_max', '7')
+    def test_limit_hits_max(self):
+        id = self._create_bulk_group_activities(9)
+        results = helpers.call_action('group_activity_list', id=id, limit='9')
+        eq(len(results), 7)  # i.e. ckan.activity_list_limit_max
+
+
+class TestOrganizationActivityList(helpers.FunctionalTestBase):
+    def test_create_organization(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new organization'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], org['id'])
+        eq(activities[0]['data']['group']['name'], org['name'])
+
+    def test_change_organization(self):
+        user = factories.User()
+        _clear_activities()
+        org = factories.Organization(user=user)
+        original_title = org['title']
+        org['title'] = 'Organization with changed title'
+        helpers.call_action(
+            'organization_update', context={'user': user['name']}, **org)
+
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed organization', 'new organization'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], org['id'])
+        eq(activities[0]['data']['group']['name'], org['name'])
+        eq(activities[0]['data']['group']['title'],
+           'Organization with changed title')
+
+        # the old org still has the old title
+        eq(activities[1]['activity_type'], 'new organization')
+        eq(activities[1]['data']['group']['title'], original_title)
+
+    def test_create_dataset(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        original_title = dataset['title']
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package', 'new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+        # the old dataset still has the old title
+        eq(activities[1]['activity_type'], 'new package')
+        eq(activities[1]['data']['package']['title'], original_title)
+
+    def test_change_dataset_add_tag(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        _clear_activities()
+        dataset['tags'].append(dict(name='checked'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_delete_dataset(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        _clear_activities()
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset_that_used_to_be_in_the_org(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        org2 = factories.Organization(user=user)
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        # remove the dataset from the org
+        dataset['owner_org'] = org2['id']
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+        _clear_activities()
+        # edit the dataset
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        # dataset change should not show up in its former group
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities], [])
+
+    def test_delete_dataset_that_used_to_be_in_the_org(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        org2 = factories.Organization(user=user)
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        # remove the dataset from the group
+        dataset['owner_org'] = org2['id']
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+        _clear_activities()
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+
+        # dataset deletion should not show up in its former org
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities], [])
+
+    def _create_bulk_org_activities(self, count):
+        org = factories.Organization()
+        from ckan import model
+        objs = [
+            model.Activity(
+                user_id=None, object_id=org['id'], revision_id=None,
+                activity_type=None, data=None)
+            for i in range(count)]
+        model.Session.add_all(objs)
+        model.repo.commit_and_remove()
+        return org['id']
+
+    def test_limit_default(self):
+        id = self._create_bulk_org_activities(35)
+        results = helpers.call_action('organization_activity_list', id=id)
+        eq(len(results), 31)  # i.e. default value
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    def test_limit_configured(self):
+        id = self._create_bulk_org_activities(7)
+        results = helpers.call_action('organization_activity_list', id=id)
+        eq(len(results), 5)  # i.e. ckan.activity_list_limit
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    @helpers.change_config('ckan.activity_list_limit_max', '7')
+    def test_limit_hits_max(self):
+        id = self._create_bulk_org_activities(9)
+        results = helpers.call_action('organization_activity_list', id=id, limit='9')
+        eq(len(results), 7)  # i.e. ckan.activity_list_limit_max
+
+
+class TestRecentlyChangedPackagesActivityList(helpers.FunctionalTestBase):
+    def test_create_dataset(self):
+        user = factories.User()
+        org = factories.Dataset(user=user)
+
+        activities = helpers.call_action('recently_changed_packages_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], org['id'])
+        eq(activities[0]['data']['package']['name'], org['name'])
+
+    def test_change_dataset(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        original_title = dataset['title']
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('recently_changed_packages_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package', 'new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+        # the old dataset still has the old title
+        eq(activities[1]['activity_type'], 'new package')
+        eq(activities[1]['data']['package']['title'], original_title)
+
+    def test_change_dataset_add_extra(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        _clear_activities()
+        dataset['extras'].append(dict(key='rating', value='great'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('recently_changed_packages_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_change_dataset_add_tag(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        _clear_activities()
+        dataset['tags'].append(dict(name='checked'))
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('recently_changed_packages_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['changed package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def test_delete_dataset(self):
+        user = factories.User()
+        org = factories.Organization(user=user)
+        dataset = factories.Dataset(owner_org=org['id'], user=user)
+        _clear_activities()
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('organization_activity_list',
+                                         id=org['id'])
+        eq([activity['activity_type'] for activity in activities],
+           ['deleted package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+
+    def _create_bulk_package_activities(self, count):
+        from ckan import model
+        objs = [
+            model.Activity(
+                user_id=None, object_id=None, revision_id=None,
+                activity_type='new_package', data=None)
+            for i in range(count)]
+        model.Session.add_all(objs)
+        model.repo.commit_and_remove()
+
+    def test_limit_default(self):
+        self._create_bulk_package_activities(35)
+        results = helpers.call_action('recently_changed_packages_activity_list')
+        eq(len(results), 31)  # i.e. default value
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    def test_limit_configured(self):
+        self._create_bulk_package_activities(7)
+        results = helpers.call_action('recently_changed_packages_activity_list')
+        eq(len(results), 5)  # i.e. ckan.activity_list_limit
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    @helpers.change_config('ckan.activity_list_limit_max', '7')
+    def test_limit_hits_max(self):
+        self._create_bulk_package_activities(9)
+        results = helpers.call_action('recently_changed_packages_activity_list', limit='9')
+        eq(len(results), 7)  # i.e. ckan.activity_list_limit_max
+
+
+class TestDashboardActivityList(helpers.FunctionalTestBase):
+    def test_create_user(self):
+        user = factories.User()
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([activity['activity_type'] for activity in activities],
+           ['new user'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], user['id'])
+        # user's own activities are always marked ``'is_new': False``
+        eq(activities[0]['is_new'], False)
+
+    def test_create_dataset(self):
+        user = factories.User()
+        _clear_activities()
+        dataset = factories.Dataset(user=user)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([activity['activity_type'] for activity in activities],
+           ['new package'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], dataset['id'])
+        eq(activities[0]['data']['package']['name'], dataset['name'])
+        # user's own activities are always marked ``'is_new': False``
+        eq(activities[0]['is_new'], False)
+
+    def test_create_group(self):
+        user = factories.User()
+        _clear_activities()
+        group = factories.Group(user=user)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([activity['activity_type'] for activity in activities],
+           ['new group'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], group['id'])
+        eq(activities[0]['data']['group']['name'], group['name'])
+        # user's own activities are always marked ``'is_new': False``
+        eq(activities[0]['is_new'], False)
+
+    def test_create_organization(self):
+        user = factories.User()
+        _clear_activities()
+        org = factories.Organization(user=user)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([activity['activity_type'] for activity in activities],
+           ['new organization'])
+        eq(activities[0]['user_id'], user['id'])
+        eq(activities[0]['object_id'], org['id'])
+        eq(activities[0]['data']['group']['name'], org['name'])
+        # user's own activities are always marked ``'is_new': False``
+        eq(activities[0]['is_new'], False)
+
+    def _create_bulk_package_activities(self, count):
+        user = factories.User()
+        from ckan import model
+        objs = [
+            model.Activity(
+                user_id=user['id'], object_id=None, revision_id=None,
+                activity_type=None, data=None)
+            for i in range(count)]
+        model.Session.add_all(objs)
+        model.repo.commit_and_remove()
+        return user['id']
+
+    def test_limit_default(self):
+        id = self._create_bulk_package_activities(35)
+        results = helpers.call_action('dashboard_activity_list',
+                                      context={'user': id})
+        eq(len(results), 31)  # i.e. default value
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    def test_limit_configured(self):
+        id = self._create_bulk_package_activities(7)
+        results = helpers.call_action('dashboard_activity_list',
+                                      context={'user': id})
+        eq(len(results), 5)  # i.e. ckan.activity_list_limit
+
+    @helpers.change_config('ckan.activity_list_limit', '5')
+    @helpers.change_config('ckan.activity_list_limit_max', '7')
+    def test_limit_hits_max(self):
+        id = self._create_bulk_package_activities(9)
+        results = helpers.call_action('dashboard_activity_list', limit='9',
+                                      context={'user': id})
+        eq(len(results), 7)  # i.e. ckan.activity_list_limit_max
+
+
+class TestDashboardNewActivities(helpers.FunctionalTestBase):
+    def test_users_own_activities(self):
+        # a user's own activities are not shown as "new"
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': user['name']}, **dataset)
+        helpers.call_action(
+            'package_delete', context={'user': user['name']}, **dataset)
+        group = factories.Group(user=user)
+        group['title'] = 'Group with changed title'
+        helpers.call_action(
+            'group_update', context={'user': user['name']}, **group)
+        helpers.call_action(
+            'group_delete', context={'user': user['name']}, **group)
+
+        new_activities = helpers.call_action('dashboard_activity_list',
+                                             context={'user': user['id']})
+        eq([activity['is_new'] for activity in new_activities],
+           [False] * 7)
+        new_activities_count = \
+            helpers.call_action('dashboard_new_activities_count',
+                                context={'user': user['id']})
+        eq(new_activities_count, 0)
+
+    def test_activities_by_a_followed_user(self):
+        user = factories.User()
+        followed_user = factories.User()
+        helpers.call_action(
+            'follow_user', context={'user': user['name']}, **followed_user)
+        _clear_activities()
+        dataset = factories.Dataset(user=followed_user)
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': followed_user['name']}, **dataset)
+        helpers.call_action(
+            'package_delete', context={'user': followed_user['name']}, **dataset)
+        group = factories.Group(user=followed_user)
+        group['title'] = 'Group with changed title'
+        helpers.call_action(
+            'group_update', context={'user': followed_user['name']}, **group)
+        helpers.call_action(
+            'group_delete', context={'user': followed_user['name']}, **group)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([activity['activity_type'] for activity in activities[::-1]],
+           ['new package', 'changed package', 'deleted package',
+            'new group', 'changed group', 'deleted group'])
+        eq([activity['is_new'] for activity in activities],
+           [True] * 6)
+        eq(helpers.call_action('dashboard_new_activities_count',
+                               context={'user': user['id']}),
+           6)
+
+    def test_activities_on_a_followed_dataset(self):
+        user = factories.User()
+        another_user = factories.Sysadmin()
+        _clear_activities()
+        dataset = factories.Dataset(user=another_user)
+        helpers.call_action(
+            'follow_dataset', context={'user': user['name']}, **dataset)
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': another_user['name']}, **dataset)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([(activity['activity_type'], activity['is_new'])
+            for activity in activities[::-1]],
+           [('new package', True),
+            # NB The 'new package' activity is in our activity stream and shows
+            # as "new" even though it occurred before we followed it. This is
+            # known & intended design.
+            ('changed package', True),
+            ])
+        eq(helpers.call_action('dashboard_new_activities_count',
+                               context={'user': user['id']}),
+           2)
+
+    def test_activities_on_a_followed_group(self):
+        user = factories.User()
+        another_user = factories.Sysadmin()
+        _clear_activities()
+        group = factories.Group(user=user)
+        helpers.call_action(
+            'follow_group', context={'user': user['name']}, **group)
+        group['title'] = 'Group with changed title'
+        helpers.call_action(
+            'group_update', context={'user': another_user['name']}, **group)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([(activity['activity_type'], activity['is_new'])
+            for activity in activities[::-1]],
+           [('new group', False),  # False because user did this one herself
+            ('changed group', True),
+            ])
+        eq(helpers.call_action('dashboard_new_activities_count',
+                               context={'user': user['id']}),
+           1)
+
+    def test_activities_on_a_dataset_in_a_followed_group(self):
+        user = factories.User()
+        another_user = factories.Sysadmin()
+        group = factories.Group(user=user)
+        _clear_activities()
+        dataset = factories.Dataset(groups=[{'name': group['name']}],
+                                    user=another_user)
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'follow_dataset', context={'user': user['name']}, **dataset)
+        helpers.call_action(
+            'package_update', context={'user': another_user['name']}, **dataset)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([(activity['activity_type'], activity['is_new'])
+            for activity in activities[::-1]],
+           [('new package', True),
+            ('changed package', True),
+            ])
+        eq(helpers.call_action('dashboard_new_activities_count',
+                               context={'user': user['id']}),
+           2)
+
+    def test_activities_that_should_not_show(self):
+        user = factories.User()
+        _clear_activities()
+        # another_user does some activity unconnected with user
+        another_user = factories.Sysadmin()
+        group = factories.Group(user=another_user)
+        dataset = factories.Dataset(groups=[{'name': group['name']}],
+                                    user=another_user)
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': another_user['name']}, **dataset)
+
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq([(activity['activity_type'], activity['is_new'])
+            for activity in activities[::-1]],
+           [])
+        eq(helpers.call_action('dashboard_new_activities_count',
+                               context={'user': user['id']}),
+           0)
+
+    @helpers.change_config('ckan.activity_list_limit', '15')
+    def test_maximum_number_of_new_activities(self):
+        '''Test that the new activities count does not go higher than 15, even
+        if there are more than 15 new activities from the user's followers.'''
+        user = factories.User()
+        another_user = factories.Sysadmin()
+        dataset = factories.Dataset()
+        helpers.call_action(
+            'follow_dataset', context={'user': user['name']}, **dataset)
+        for n in range(0, 20):
+            dataset['notes'] = 'Updated {n} times'.format(n=n)
+            helpers.call_action(
+                'package_update', context={'user': another_user['name']}, **dataset)
+        eq(helpers.call_action('dashboard_new_activities_count',
+                               context={'user': user['id']}),
+           15)

@@ -1,9 +1,11 @@
 # encoding: utf-8
 
-'''Unit tests for ckan/logic/auth/create.py.
+'''Unit tests for ckan/logic/action/create.py.
 
 '''
 import __builtin__ as builtins
+
+import six
 
 import ckan
 import ckan.logic as logic
@@ -16,7 +18,7 @@ import nose.tools
 from ckan.common import config
 from pyfakefs import fake_filesystem
 
-assert_equals = nose.tools.assert_equals
+eq = assert_equals = nose.tools.assert_equals
 assert_raises = nose.tools.assert_raises
 assert_not_equals = nose.tools.assert_not_equals
 
@@ -789,6 +791,21 @@ class TestDatasetCreate(helpers.FunctionalTestBase):
         )
         assert_equals(dataset['id'], '1234')
 
+    def test_context_is_not_polluted(self):
+        user = factories.Sysadmin()
+        context = {
+            'user': user['name'],
+            'ignore_auth': False,
+        }
+        helpers.call_action(
+            'package_create',
+            context=context,
+            id='1234',
+            name='test-dataset',
+        )
+        assert('id' not in context)
+        assert('package' not in context)
+
     def test_id_cant_already_exist(self):
         dataset = factories.Dataset()
         user = factories.Sysadmin()
@@ -966,6 +983,15 @@ class TestDatasetCreate(helpers.FunctionalTestBase):
         tag_names = sorted([tag_dict['name']
                             for tag_dict in dataset['tags']])
         assert_equals(tag_names, ['russian', 'tolstoy'])
+
+    def test_return_id_only(self):
+        dataset = helpers.call_action(
+            'package_create',
+            name='test-id',
+            context={'return_id_only': True},
+        )
+
+        assert isinstance(dataset, six.string_types)
 
 
 class TestGroupCreate(helpers.FunctionalTestBase):
@@ -1179,3 +1205,78 @@ class TestUserCreate(helpers.FunctionalTestBase):
 
         user_obj = model.User.get(user['id'])
         assert user_obj.password != 'pretend-this-is-a-valid-hash'
+
+
+def _clear_activities():
+    from ckan import model
+    model.Session.query(model.ActivityDetail).delete()
+    model.Session.query(model.Activity).delete()
+    model.Session.flush()
+
+
+class TestFollowDataset(helpers.FunctionalTestBase):
+    def test_no_activity(self):
+        app = self._get_test_app()
+        user = factories.User()
+        dataset = factories.Dataset(user=user)
+        _clear_activities()
+        helpers.call_action(
+            'follow_dataset', context={'user': user['name']}, **dataset)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           [])
+        # A follow creates no Activity, since:
+        # https://github.com/ckan/ckan/pull/317
+
+
+class TestFollowGroup(helpers.FunctionalTestBase):
+    def test_no_activity(self):
+        app = self._get_test_app()
+        user = factories.User()
+        group = factories.Group(user=user)
+        _clear_activities()
+        helpers.call_action(
+            'follow_group', context={'user': user['name']}, **group)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           [])
+        # A follow creates no Activity, since:
+        # https://github.com/ckan/ckan/pull/317
+
+
+class TestFollowOrganization(helpers.FunctionalTestBase):
+    def test_no_activity(self):
+        app = self._get_test_app()
+        user = factories.User()
+        org = factories.Organization(user=user)
+        _clear_activities()
+        helpers.call_action(
+            'follow_group', context={'user': user['name']}, **org)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           [])
+        # A follow creates no Activity, since:
+        # https://github.com/ckan/ckan/pull/317
+
+
+class TestFollowUser(helpers.FunctionalTestBase):
+    def test_no_activity(self):
+        app = self._get_test_app()
+        user = factories.User()
+        user2 = factories.User()
+        _clear_activities()
+        helpers.call_action(
+            'follow_user', context={'user': user['name']}, **user2)
+
+        activities = helpers.call_action('user_activity_list',
+                                         id=user['id'])
+        eq([activity['activity_type'] for activity in activities],
+           [])
+        # A follow creates no Activity, since:
+        # https://github.com/ckan/ckan/pull/317

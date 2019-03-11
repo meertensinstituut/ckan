@@ -1,19 +1,18 @@
 # encoding: utf-8
 
 from ckan.lib.helpers import url_for
-from nose.tools import assert_equal
 from ckan.common import config
 import hashlib
 
 from ckan.tests.legacy import CreateTestData
 from ckan.tests.legacy.html_check import HtmlCheckMethods
-from ckan.tests.legacy.pylons_controller import PylonsTestCase
 from ckan.tests.legacy.mock_mail_server import SmtpServerHarness
+
 import ckan.model as model
 from base import FunctionalTestCase
-from ckan.lib.mailer import get_reset_link, create_reset_key
+from ckan.lib.mailer import create_reset_key
 
-class TestUserController(FunctionalTestCase, HtmlCheckMethods, PylonsTestCase, SmtpServerHarness):
+class TestUserController(FunctionalTestCase, HtmlCheckMethods, SmtpServerHarness):
     @classmethod
     def setup_class(cls):
         smtp_server = config.get('smtp.test_server')
@@ -22,7 +21,6 @@ class TestUserController(FunctionalTestCase, HtmlCheckMethods, PylonsTestCase, S
             port = int(port) + int(str(hashlib.md5(cls.__name__).hexdigest())[0], 16)
             config['smtp.test_server'] = '%s:%s' % (host, port)
 
-        PylonsTestCase.setup_class()
         SmtpServerHarness.setup_class()
         CreateTestData.create()
 
@@ -60,7 +58,7 @@ class TestUserController(FunctionalTestCase, HtmlCheckMethods, PylonsTestCase, S
         res = self.app.post(url, status=302, extra_environ=extra_environ)
 
         assert user.is_deleted(), user
-        assert res.header('Location').startswith(redirect_url), res.header('Location')
+        assert res.headers.get('Location').startswith(redirect_url), res.headers.get('Location')
 
     def test_user_delete_by_unauthorized_user(self):
         user = model.User.by_name(u'annafan')

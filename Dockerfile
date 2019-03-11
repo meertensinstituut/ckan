@@ -1,6 +1,6 @@
 # See CKAN docs on installation from Docker Compose on usage
-FROM debian:jessie
-LABEL maintainer="Open Knowledge"
+FROM debian:stretch
+MAINTAINER Open Knowledge
 
 # Install required system packages
 RUN apt-get -q -y update \
@@ -21,7 +21,7 @@ RUN apt-get -q -y update \
         git-core \
         vim \
         wget \
-        net-tools \ 
+        net-tools \
     && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -37,6 +37,7 @@ ARG CKAN_SITE_URL
 # Create ckan user
 RUN useradd -r -u 900 -m -c "ckan account" -d $CKAN_HOME -s /bin/false ckan
 RUN unlink /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
+
 # Setup virtual environment for CKAN
 RUN mkdir -p $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH && \
     virtualenv $CKAN_VENV && \
@@ -59,7 +60,7 @@ RUN ckan-pip install -U pip && \
 
 # USER root
 # RUN ckan-pip install -e git+https://github.com/liip/ckanext-ddi.git#egg=ckanext-ddi --src /var/lib/ckan/ckanext && \
-    # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop 
+    # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop
 
 RUN . $CKAN_VENV/bin/activate && ls -la $CKAN_VENV/src/ckan && cd $CKAN_VENV/src/ckan/ckanext-facet && pwd && \
     python setup.py develop && \

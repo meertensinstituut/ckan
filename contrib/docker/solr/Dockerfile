@@ -1,6 +1,6 @@
-FROM solr:6.6.2
+FROM solr:6.6.5
 LABEL maintainer="Open Knowledge"
-ARG SOLR_VERSION=6.6.2
+ARG SOLR_VERSION=6.6.5
 
 # Enviroment
 ENV SOLR_CORE ckan
@@ -24,6 +24,8 @@ https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/$SOLR_
 #https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/7.5.0/solr/server/solr/configsets/sample_techproducts_configs/conf/protwords.txt \
 #https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/7.5.0/solr/server/solr/configsets/sample_techproducts_configs/conf/elevate.xml \
 /opt/solr/server/solr/$SOLR_CORE/conf/
+
+RUN ls -la /opt/solr/server/solr/$SOLR_CORE/conf/
 
 # Create Core.properties
 RUN echo name=$SOLR_CORE > /opt/solr/server/solr/$SOLR_CORE/core.properties

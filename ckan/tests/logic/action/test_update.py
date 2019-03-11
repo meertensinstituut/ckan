@@ -652,6 +652,20 @@ class TestDatasetUpdate(helpers.FunctionalTestBase):
                             for tag_dict in dataset_['tags']])
         assert_equals(tag_names, ['russian', 'tolstoy'])
 
+    def test_return_id_only(self):
+        user = factories.User()
+        dataset = factories.Dataset(
+            user=user)
+
+        updated_dataset = helpers.call_action(
+            'package_update',
+            id=dataset['id'],
+            notes='Test',
+            context={'return_id_only': True},
+        )
+
+        assert_equals(updated_dataset, dataset['id'])
+
 
 class TestUpdateSendEmailNotifications(object):
     @classmethod
@@ -1551,3 +1565,45 @@ class TestBulkOperations(object):
             .all()
         for revision in revisions:
             eq_(revision.state, 'deleted')
+
+
+class TestDashboardMarkActivitiesOld(helpers.FunctionalTestBase):
+    def test_mark_as_old_some_activities_by_a_followed_user(self):
+        # do some activity that will show up on user's dashboard
+        user = factories.User()
+        # now some activity that is "new" because it is by a followed user
+        followed_user = factories.User()
+        helpers.call_action(
+            'follow_user', context={'user': user['name']}, **followed_user)
+        dataset = factories.Dataset(user=followed_user)
+        dataset['title'] = 'Dataset with changed title'
+        helpers.call_action(
+            'package_update', context={'user': followed_user['name']}, **dataset)
+        eq_(helpers.call_action('dashboard_new_activities_count',
+                                context={'user': user['id']}),
+            3)
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq_([(activity['activity_type'], activity['is_new'])
+            for activity in activities[::-1]],
+            [('new user', False),
+             ('new user', True),
+             ('new package', True),
+             ('changed package', True),
+             ])
+
+        helpers.call_action('dashboard_mark_activities_old',
+                            context={'user': user['name']})
+
+        eq_(helpers.call_action('dashboard_new_activities_count',
+                                context={'user': user['id']}),
+            0)
+        activities = helpers.call_action('dashboard_activity_list',
+                                         context={'user': user['id']})
+        eq_([(activity['activity_type'], activity['is_new'])
+            for activity in activities[::-1]],
+            [('new user', False),
+             ('new user', False),
+             ('new package', False),
+             ('changed package', False),
+             ])

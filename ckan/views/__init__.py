@@ -2,6 +2,7 @@
 
 from paste.deploy.converters import asbool
 from six import text_type
+from werkzeug import import_string, cached_property
 
 import ckan.model as model
 from ckan.common import g, request, config, session
@@ -13,6 +14,24 @@ log = logging.getLogger(__name__)
 
 APIKEY_HEADER_NAME_KEY = u'apikey_header_name'
 APIKEY_HEADER_NAME_DEFAULT = u'X-CKAN-API-Key'
+
+
+class LazyView(object):
+
+    def __init__(self, import_name, view_name=None):
+        self.__module__, self.__name__ = import_name.rsplit(u'.', 1)
+        self.import_name = import_name
+        self.view_name = view_name
+
+    @cached_property
+    def view(self):
+        actual_view = import_string(self.import_name)
+        if self.view_name:
+            actual_view = actual_view.as_view(self.view_name)
+        return actual_view
+
+    def __call__(self, *args, **kwargs):
+        return self.view(*args, **kwargs)
 
 
 def check_session_cookie(response):
@@ -98,8 +117,11 @@ def identify_user():
     if authenticators:
         for item in authenticators:
             item.identify()
-            if g.user:
-                break
+            try:
+                if g.user:
+                    break
+            except AttributeError:
+                continue
 
     # We haven't identified the user so try the default methods
     if not getattr(g, u'user', None):
@@ -179,3 +201,7 @@ def _get_user_for_apikey():
     query = model.Session.query(model.User)
     user = query.filter_by(apikey=apikey).first()
     return user
+
+
+def set_controller_and_action():
+    g.controller, g.action = p.toolkit.get_endpoint()

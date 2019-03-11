@@ -118,6 +118,7 @@ def user_add(args):
 
     # Required
     while '@' not in data_dict.get('email', ''):
+        print('Error: Invalid email address')
         data_dict['email'] = input('Email address: ').strip()
 
     if 'password' not in data_dict:
@@ -656,7 +657,7 @@ class RDFExport(CkanCommand):
             if not dd['state'] == 'active':
                 continue
 
-            url = h.url_for(controller='package', action='read', id=dd['name'])
+            url = h.url_for('dataset.read', id=dd['name'])
 
             url = urljoin(fetch_url, url[1:]) + '.rdf'
             try:
