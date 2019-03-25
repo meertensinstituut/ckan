@@ -311,6 +311,11 @@ def __main__():
     else:
         print('removed dataset')
 
+    if importlib.set_title_homepage_style():
+        print('#### Website title and home page style set successfully')
+    else:
+        print('#### Website title and home page style set failed')
+
     files = [join(wd, f) for f in sorted(listdir(wd)) if f.endswith('.xml') and isfile(join(wd, f))]
     print('get file lists')
     counter = 0
@@ -336,10 +341,6 @@ def __main__():
     print('#### Ends at: %s' % end)
     print('#### Time elapsed: %s' % elapsed)
 
-    if importlib.set_title_homepage_style():
-        print('#### Website title and home page style set successfully')
-    else:
-        print('#### Website title and home page style set failed')
 
 
 __main__()

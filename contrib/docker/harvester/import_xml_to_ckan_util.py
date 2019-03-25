@@ -7,11 +7,11 @@ import requests
 import hashlib
 import datetime
 
-apikey = '14aff969-a909-4947-bb4c-e0383829213d'
+apikey = 'c20e9437-1167-4e6e-876b-ab6f873c6e44'
 orgs = {
     'meertens': ['Meertens Institute', 'meertens'],
     'ucla': ['UCLA', 'ucla'],
-    'wossidia': ['Wossidia', 'wossidia']
+    'wossidia': ['WossiDiA', 'wossidia']
 }
 debug = False
 qty = 99999
