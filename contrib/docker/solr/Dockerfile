@@ -1,15 +1,17 @@
-ARG SOLR_VERSION=6.6.2
 FROM solr:6.6.2
 LABEL maintainer="Open Knowledge"
+ARG SOLR_VERSION=6.6.2
 
 # Enviroment
 ENV SOLR_CORE ckan
+ENV SOLR_HEAP=2048m
 
 # Create Directories
 RUN mkdir -p /opt/solr/server/solr/$SOLR_CORE/conf
 RUN mkdir -p /opt/solr/server/solr/$SOLR_CORE/data
 
 # Adding Files
+#ADD ./contrib/docker/solr/solr.in.sh /etc/default/solr.in.sh
 ADD ./contrib/docker/solr/solrconfig.xml \
 ./ckan/config/solr/schema.xml \
 https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/$SOLR_VERSION/solr/server/solr/configsets/basic_configs/conf/currency.xml \
