@@ -37,12 +37,14 @@ See the `CKAN Documentation <http://docs.ckan.org>`_ for installation instructio
 
 Easy start using docker
 -----------------------
+  * Create folder for isebel: `mkdir isebel && cd isebel`
+  * Create folder for source code in folder isebel: `mkdir code_dev`
   * Clone ckan repository with the submodule: `git clone --recurse-submodules -j8 ckan`
-  * Create a production.ini file in folder ckan/contrib/docker/
-  * Make directory for ISEBEL specific code: `mkdir code_dev && cd code_dev`
+  * Create a production.ini file in folder ckan/contrib/docker/ (under newly cloned CKAN)
+  * Go to code_dev folder: `cd code_dev`
   * Clone ISEBEL CKAN extension: `git clone https://github.com/vicding-mi/ckanext-facet.git`
   * Clone B2Find CKAN extension: `git clone https://github.com/vicding-mi/ckanext-timeline.git`
-  * Clone translator scripts: `git clone https://git.informatik.uni-rostock.de/isebel/translation-thesaurus.git`
+  * Clone translator scripts: `git clone https://git.informatik.uni-rostock.de/isebel/translation-thesaurus.git` (optional)
   * Go to ckan folder: `cd ../ckan`
   * Go to docker subfolder: `cd contrib/docker`
   * Start the whole setup: `./start-ckan.sh`
