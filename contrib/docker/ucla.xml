@@ -1,1 +1,27 @@
-<?xml version='1.0' encoding='UTF-8'?><record xmlns="http://www.openarchives.org/OAI/2.0/"><header><identifier>JAT_06_0_01311</identifier><datestamp>2018-01-18T07:16:29Z</datestamp></header><metadata><xml xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" encoding="UTF-8"><oai_dc:dc xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc.xsd http://www.openarchives.org/OAI/2.0/oai_dc/"><oai_dc:contributor>Evald Tang Kristensen</oai_dc:contributor><oai_dc:language>Dansk</oai_dc:language><oai_dc:identifier>JAT_06_0_01311</oai_dc:identifier><oai_dc:type>sagn</oai_dc:type><oai_dc:subject>Vore fædres tankesæt og åndsliv</oai_dc:subject><oai_dc:subject>Landskabsord</oai_dc:subject><oai_dc:rights>Public Domain</oai_dc:rights><oai_dc:description>http://etkspace.scandinavian.ucla.edu/stories/show/JAT_06_0_01311</oai_dc:description><oai_dc:title>JAT_06_0_01311</oai_dc:title><oai_dc:date>1905</oai_dc:date><oai_dc:coverage>Danmark</oai_dc:coverage><oai_dc:source>Jyske almueliv</oai_dc:source></oai_dc:dc></xml></metadata></record>
+<?xml version='1.0' encoding='UTF-8'?>
+<record xmlns="http://www.openarchives.org/OAI/2.0/">
+  <header>
+    <identifier>JAT_06_0_01311</identifier>
+    <datestamp>2018-01-18T07:16:29Z</datestamp>
+  </header>
+  <metadata>
+    <xml xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" encoding="UTF-8">
+      <oai_dc:dc
+        xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc.xsd http://www.openarchives.org/OAI/2.0/oai_dc/">
+        <oai_dc:contributor>Evald Tang Kristensen</oai_dc:contributor>
+        <oai_dc:language>Dansk</oai_dc:language>
+        <oai_dc:identifier>JAT_06_0_01311</oai_dc:identifier>
+        <oai_dc:type>sagn</oai_dc:type>
+        <oai_dc:subject>Vore fædres tankesæt og åndsliv</oai_dc:subject>
+        <oai_dc:subject>Landskabsord</oai_dc:subject>
+        <oai_dc:rights>Public Domain</oai_dc:rights>
+        <oai_dc:description>http://etkspace.scandinavian.ucla.edu/stories/show/JAT_06_0_01311</oai_dc:description>
+        <oai_dc:title>JAT_06_0_01311</oai_dc:title>
+        <oai_dc:date>1905</oai_dc:date>
+        <oai_dc:coverage>Danmark</oai_dc:coverage>
+        <oai_dc:source>Jyske almueliv</oai_dc:source>
+      </oai_dc:dc>
+    </xml>
+  </metadata>
+</record>
