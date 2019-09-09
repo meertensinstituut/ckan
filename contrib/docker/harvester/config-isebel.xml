@@ -34,8 +34,8 @@
     <dir path="oai-dc" id="oai-dc" max-files="0"/>
     <dir path="oai-isebel" id="isebel" max-files="0"/>
   </directories>
-  
-  
+
+
   <!-- ### actions to take on metadata formats (in order of preference) ### -->
   <!-- <actions>
     <format match="namespace" value="http://www.openarchives.org/OAI/2.0/oai_dc/">
@@ -46,7 +46,7 @@
       <action type="save" dir="oai-dc" suffix=".xml"/>
     </format>
   </actions> -->
-  
+
   <actions>
     <!--<format match="namespace" value="http://www.isebel.eu/ns/isebel/">-->
       <!--<action type="save" dir="oai" suffix=".xml"/>-->
@@ -90,7 +90,10 @@
     <provider url="https://b2share.eudat.eu/oai2d/" name="B2SHARE">
       <set>Linguistics</set>
     </provider>-->
-    <provider url="http://www.isebel.eu/oai-pmh/verhalenbank/" name="isebel_verhalenbank" timeout="300" />
+<!--    <provider url="http://www.isebel.eu/oai-pmh/verhalenbank/" name="isebel_verhalenbank" timeout="300" />-->
+<!--    <provider url="https://oaipmh.isebel.eu/" name="isebel_verhalenbank" timeout="300" />-->
+<!--    <provider url="http://host.docker.internal:8000/" name="isebel_verhalenbank" timeout="300" />-->
+    <provider url="http://n-195-169-89-116.diginfra.net:8000/" name="isebel_verhalenbank" timeout="300" />
     <provider url="http://etkspace.scandinavian.ucla.edu/oai_pmh/" name="isebel_ucla"/>
     <provider url="http://oai.wossidia.de/OAIHandler" name="isebel_rostock" timeout="600" />
   </providers>

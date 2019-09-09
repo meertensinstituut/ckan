@@ -50,7 +50,7 @@ if [[ "0" -eq "$?" ]]; then
 fi
 
 # Start docker
-docker-compose up -d --build 
+docker-compose up -d --build
 # sleep 10
 # docker-compose restart ckan
 # sleep 10
@@ -61,6 +61,7 @@ docker-compose up -d --build
 
 # docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add ckan_admin
 
+docker cp harvester/import_xml_to_ckan.py ckan:/var/harvester/import_xml_to_ckan.py
 docker cp harvester/import_xml_to_ckan_ucla.py ckan:/var/harvester/import_xml_to_ckan_ucla.py
 docker cp harvester/import_xml_to_ckan_verhalenbank.py ckan:/var/harvester/import_xml_to_ckan_verhalenbank.py
 docker cp harvester/import_xml_to_ckan_wossidia.py ckan:/var/harvester/import_xml_to_ckan_wossidia.py

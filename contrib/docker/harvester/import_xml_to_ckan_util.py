@@ -7,15 +7,15 @@ import requests
 import hashlib
 import datetime
 
-apikey = '239a9017-2e16-4f8e-b3f6-ab01852d9f24'
+apikey = '90bb89f6-817c-447c-96e9-907c1e1adfe9'
 
 orgs = {
     'meertens': ['Meertens Institute', 'meertens'],
     'ucla': ['UCLA', 'ucla'],
     'wossidia': ['WossiDiA', 'wossidia']
 }
-debug = False
-qty = 99999
+debug = True
+qty = 100
 
 
 def set_title_homepage_style():
