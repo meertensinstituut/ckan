@@ -34,6 +34,12 @@ ENV CKAN_STORAGE_PATH=/var/lib/ckan
 # Build-time variables specified by docker-compose.yml / .env
 ARG CKAN_SITE_URL
 
+# install package needed for importing scripts
+USER root
+RUN pip install xmljson
+# RUN ckan-pip install -e git+https://github.com/liip/ckanext-ddi.git#egg=ckanext-ddi --src /var/lib/ckan/ckanext && \
+    # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop
+
 # Create ckan user
 RUN useradd -r -u 900 -m -c "ckan account" -d $CKAN_HOME -s /bin/false ckan
 RUN unlink /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
@@ -58,13 +64,11 @@ RUN ckan-pip install -U pip && \
     chmod +x /ckan-entrypoint.sh && \
     chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH
 
-# USER root
-# RUN ckan-pip install -e git+https://github.com/liip/ckanext-ddi.git#egg=ckanext-ddi --src /var/lib/ckan/ckanext && \
-    # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop
-
-RUN . $CKAN_VENV/bin/activate && ls -la $CKAN_VENV/src/ckan && cd $CKAN_VENV/src/ckan/ckanext-facet && pwd && \
-    python setup.py develop && \
+RUN . $CKAN_VENV/bin/activate && ls -la $CKAN_VENV/src/ckan && \
+    cd $CKAN_VENV/src/ckan/ckanext-facet && python setup.py develop && \
     cd $CKAN_VENV/src/ckan/ckanext-timeline && python setup.py develop && \
+    cd $CKAN_VENV/src/ckan/ckanext-isebeltranslate && python setup.py develop && \
+    cd $CKAN_VENV/src/ckan/ckanext-isebelimporter && python setup.py develop && \
     ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git#egg=ckanext-spatial" && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckanext-spatial/pip-requirements.txt  && \
     cd $CKAN_VENV/src/ckanext-spatial && python setup.py develop && \

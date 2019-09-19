@@ -38,6 +38,10 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
     privileged: true
+    depends_on:
+      - solr
+      - db
+      - redis
     volumes:
 #      - ckan_config:/etc/ckan
 #      - ckan_home:/usr/lib/ckan

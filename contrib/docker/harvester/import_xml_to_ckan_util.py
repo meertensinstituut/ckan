@@ -7,7 +7,7 @@ import requests
 import hashlib
 import datetime
 
-apikey = '90bb89f6-817c-447c-96e9-907c1e1adfe9'
+apikey = 'e0af56ea-ca17-4a3c-9d92-4f893c81c589'
 
 orgs = {
     'meertens': ['Meertens Institute', 'meertens'],
@@ -172,13 +172,34 @@ def get_package_by_id(id, apikey):
     except Exception as e:
         print e.message
 
-    if response:
-        if response.code == 200:
-            # Use the json module to load CKAN's response into a dictionary.
-            response_dict = json.loads(response.read())
-            assert response_dict['success'] is True
+    if response and response.code == 200:
+        # Use the json module to load CKAN's response into a dictionary.
+        response_dict = json.loads(response.read())
+        assert response_dict['success'] is True
 
-            pprint(response_dict)
-            return response_dict
+        pprint(response_dict)
+        return response_dict
+
+    return None
+
+
+def get_package_by_name(name, apikey):
+    request = urllib2.Request('http://ckan:5000/api/3/action/package_show?name=%s' % name)
+    request.add_header('Authorization', apikey)
+
+    # Make the HTTP request.
+    response = None
+    try:
+        response = urllib2.urlopen(request)
+    except Exception as e:
+        print e.message
+
+    if response and response.code == 200:
+        # Use the json module to load CKAN's response into a dictionary.
+        response_dict = json.loads(response.read())
+        assert response_dict['success'] is True
+
+        pprint(response_dict)
+        return response_dict
 
     return None

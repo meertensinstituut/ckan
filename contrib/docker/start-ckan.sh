@@ -1,8 +1,5 @@
 #!/bin/bash
 
-echo "removing old harvester_src"
-sudo rm -rf harvester/harvester_src
-
 cp -a ../../../code_dev/harvester_src/. harvester/harvester_src/
 
 if [[ ! -f .env ]]; then
@@ -11,43 +8,41 @@ if [[ ! -f .env ]]; then
 fi
 
 # remove and copy the plugins from the latest codes - ckanext-facet
-rm -fr ../../ckanext-facet/
-echo "$?"
-if [[ "0" -eq "$?" ]]; then
-    echo "removed successfully ckanext-facet"
-else
-    echo "ckanext-facet not zero"
-fi
 cp -a ../../../code_dev/ckanext-facet/. ../../ckanext-facet/
 if [[ "0" -eq "$?" ]]; then
     echo "copied successfully ckanext-facet"
 fi
 
-# remove and copy the plugins from the latest codes - ckanext-timeline
-rm -fr ../../ckanext-timeline/
-echo "$?"
+# remove and copy the plugins from the latest codes - ckanext-isebelimporter
+cp -a ../../../code_dev/ckanext-isebelimporter/. ../../ckanext-isebelimporter/
 if [[ "0" -eq "$?" ]]; then
-    echo "removed successfully ckanext-timeline"
-else
-    echo "ckanext-timeline not zero"
+    echo "copied successfully ckanext-isebelimporter"
 fi
+
+# remove and copy the plugins from the latest codes - ckanext-isebeltranslate
+cp -a ../../../code_dev/ckanext-isebeltranslate/. ../../ckanext-isebeltranslate/
+if [[ "0" -eq "$?" ]]; then
+    echo "copied successfully ckanext-isebeltranslate"
+fi
+
+# remove and copy the plugins from the latest codes - ckanext-timeline
 cp -a ../../../code_dev/ckanext-timeline/. ../../ckanext-timeline/
 if [[ "0" -eq "$?" ]]; then
     echo "copied successfully ckanext-timeline"
 fi
 
 # remove and copy the ssl certificate
-sudo rm -fr ../../ssl/
-echo "$?"
-if [[ "0" -eq "$?" ]]; then
-    echo "removed successfully ssl"
-else
-    echo "ssl not zero"
-fi
-sudo cp -a /etc/letsencrypt/live/search.isebel.eu/. ../../ssl/
-if [[ "0" -eq "$?" ]]; then
-    echo "copied successfully ssl"
-fi
+#sudo rm -fr ../../ssl/
+#echo "$?"
+#if [[ "0" -eq "$?" ]]; then
+#    echo "removed successfully ssl"
+#else
+#    echo "ssl not zero"
+#fi
+#sudo cp -a /etc/letsencrypt/live/search.isebel.eu/. ../../ssl/
+#if [[ "0" -eq "$?" ]]; then
+#    echo "copied successfully ssl"
+#fi
 
 # Start docker
 docker-compose up -d --build
