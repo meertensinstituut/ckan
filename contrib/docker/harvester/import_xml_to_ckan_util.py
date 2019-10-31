@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import urllib2
 import json
 from pprint import pprint
@@ -7,14 +8,14 @@ import requests
 import hashlib
 import datetime
 
-apikey = 'e0af56ea-ca17-4a3c-9d92-4f893c81c589'
+apikey = 'a311ea93-9825-4f20-b5c3-214ee57409d4'
 
 orgs = {
     'meertens': ['Meertens Institute', 'meertens'],
     'ucla': ['UCLA', 'ucla'],
     'wossidia': ['WossiDiA', 'wossidia']
 }
-debug = True
+debug = False
 qty = 100
 
 
@@ -74,17 +75,18 @@ def create_org(orgKey):
     else:
         return False
 
+
 def org_exists(orgKey):
-    print 'http://ckan:5000/api/3/action/organization_show?id=%s' % orgKey
+    print('http://ckan:5000/api/3/action/organization_show?id=%s' % orgKey)
     request = urllib2.Request('http://ckan:5000/api/3/action/organization_show?id=%s' % orgKey)
     # Make the HTTP request.
     try:
         urllib2.urlopen(request)
-    except Exception as e:
-        print '%s does not exist' % orgKey
+    except:
+        print('%s does not exist' % orgKey)
         return False
 
-    print '%s exists.' % orgKey
+    print('%s exists.' % orgKey)
     return True
 
 
@@ -170,7 +172,7 @@ def get_package_by_id(id, apikey):
     try:
         response = urllib2.urlopen(request)
     except Exception as e:
-        print e.message
+        print(e.message)
 
     if response and response.code == 200:
         # Use the json module to load CKAN's response into a dictionary.
@@ -192,7 +194,7 @@ def get_package_by_name(name, apikey):
     try:
         response = urllib2.urlopen(request)
     except Exception as e:
-        print e.message
+        print(e.message)
 
     if response and response.code == 200:
         # Use the json module to load CKAN's response into a dictionary.
@@ -203,3 +205,26 @@ def get_package_by_name(name, apikey):
         return response_dict
 
     return None
+
+
+def process_persons(persons, dataset_dict):
+    existing_keys = dict()
+    if isinstance(persons.get('role'), list):
+        for role in persons.get('role'):
+            if not role.get('$') in existing_keys.keys():
+                existing_keys[role.get('$')] = 1
+            else:
+                existing_keys[role.get('$')] = existing_keys[role.get('$')] + 1
+            role_key_counter = existing_keys[role.get('$')]
+
+            dataset_dict['extras'].append(
+                {'key': '%s %s' % (role.get('$'), role_key_counter), 'value': persons.get('name').get('$')})
+            dataset_dict['extras'].append(
+                {'key': '%s %s gender' % (role.get('$'), role_key_counter),
+                 'value': persons.get('gender').get('$') if persons.get('gender') else ''})
+    else:
+        dataset_dict['extras'].append(
+            {'key': persons.get('role').get('$'), 'value': persons.get('name').get('$')})
+        dataset_dict['extras'].append(
+            {'key': persons.get('role').get('$') + ' gender',
+             'value': persons.get('gender').get('$') if persons.get('gender') else ''})

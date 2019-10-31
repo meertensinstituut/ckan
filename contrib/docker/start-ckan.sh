@@ -57,9 +57,11 @@ docker-compose up -d --build
 # docker exec -it ckan /usr/local/bin/ckan-paster --plugin=ckan sysadmin -c /etc/ckan/production.ini add ckan_admin
 
 docker cp harvester/import_xml_to_ckan.py ckan:/var/harvester/import_xml_to_ckan.py
-docker cp harvester/import_xml_to_ckan_ucla.py ckan:/var/harvester/import_xml_to_ckan_ucla.py
-docker cp harvester/import_xml_to_ckan_verhalenbank.py ckan:/var/harvester/import_xml_to_ckan_verhalenbank.py
-docker cp harvester/import_xml_to_ckan_wossidia.py ckan:/var/harvester/import_xml_to_ckan_wossidia.py
+#docker cp harvester/import_xml_to_ckan_ucla.py ckan:/var/harvester/import_xml_to_ckan_ucla.py
+#docker cp harvester/import_xml_to_ckan_verhalenbank.py ckan:/var/harvester/import_xml_to_ckan_verhalenbank.py
+#docker cp harvester/import_xml_to_ckan_wossidia.py ckan:/var/harvester/import_xml_to_ckan_wossidia.py
+docker cp harvester/testxmlvalidate.py ckan:/var/harvester/testxmlvalidate.py
+docker cp ../../../isebel-schema ckan:/var/harvester
 docker cp harvester/import_xml_to_ckan_util.py ckan:/var/harvester/import_xml_to_ckan_util.py
 docker cp ckanbashrc ckan:/usr/lib/ckan/.bashrc
 docker cp ../../../code_dev/translation-thesaurus ckan:/var/harvester/translation-thesaurus
