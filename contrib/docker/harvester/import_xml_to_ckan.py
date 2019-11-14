@@ -69,6 +69,11 @@ def load_dict_from_xml(xml, path):
 
 
 def create_package(org, f, apikey):
+    raw_xml = ''
+    with open(f, 'r') as fh:
+        raw_xml = fh.readlines()
+    raw_xml = ''.join(raw_xml)
+
     # getting xml data
     xml_data = XML().parse_xml(f)
     # getting dict from xml data
@@ -98,10 +103,11 @@ def create_package(org, f, apikey):
     # Put the details of the dataset we're going to create into a dict.
     # print('taleTypes: ', story_dict.get('taleTypes').get('taleType'))
     # print(type(story_dict.get('taleTypes').get('taleType')))
-    pattern = re.compile('[\W_]+')
+    pattern = re.compile('[^a-zA-Z0-9_-]+')
     dataset_dict = {
-        'name': pattern.sub('_', story_dict.get('@id').lower()),
-        'title': story_dict.get('@id'),
+        'name': pattern.sub('-', story_dict.get('identifier').get('$').lower()),
+        # pattern.sub('_', story_dict.get('@id').lower()),
+        'title': story_dict.get('identifier').get('$'),  # story_dict.get('@id'),
         'notes': story_dict.get('contents').get('content').get('$') if isinstance(
             story_dict.get('contents').get('content'), dict) else story_dict.get('contents').get('content')[0].get('$'),
         'url': str(story_dict.get('purl').get('$')),
@@ -113,16 +119,20 @@ def create_package(org, f, apikey):
                 'value': story_dict.get('md5')
             },
             {
+                'key': 'raw_xml',
+                'value': raw_xml
+            },
+            {
                 'key': 'identifier',
                 'value': story_dict.get('identifier').get('$')
             },
             {
                 'key': 'Type',
-                'value': story_dict.get('type').get('$')
+                'value': story_dict.get('type').get('$') if story_dict.get('type') else None
             },
         ]
     }
-
+    # exit(dataset_dict)
     # add keywords
     if story_dict.get('keywords') and story_dict.get('keywords').get('keyword'):
         if isinstance(story_dict.get('keywords').get('keyword'), list):
@@ -163,8 +173,13 @@ def create_package(org, f, apikey):
     # add events
     events = story_dict.get('events').get('event') if story_dict.get('events') is not None else None
     if isinstance(events, dict):
-        dataset_dict['extras'].append(
-            {'key': events.get('role').get('$').capitalize(), 'value': events.get('date').get('$')})
+        try:
+            if events.get('role', None) is not None and events.get('date', None) is not None:
+                dataset_dict['extras'].append(
+                    {'key': events.get('role').get('$').capitalize(), 'value': events.get('date').get('$')})
+        except Exception as ex:
+            print(events)
+            exit(ex.message)
     elif isinstance(events, list):
         for event in events:
             dataset_dict['extras'].append(
@@ -191,21 +206,32 @@ def create_package(org, f, apikey):
     # add places
     places = story_dict.get('places').get('place') if story_dict.get('places') is not None else None
     if isinstance(places, dict):
-        dataset_dict['extras'].append(
-            {'key': places.get('title').get('$') if places.get('title') is not None else places.get('@id'),
-             'value': '%s, %s' % (
-                 places.get('point').get('pointLongitude').get('$'),
-                 places.get('point').get('pointLatitude').get('$'))})
-        dataset_dict['extras'].append(
-            {'key': 'spatial',
-             'value': json.dumps({'type': 'Point',
-                                  'coordinates': [float(places.get('point').get('pointLongitude').get('$')),
-                                                  float(places.get('point').get('pointLatitude').get('$'))]})})
+        if places.get('point', None) is not None:
+            dataset_dict['extras'].append(
+                {'key': places.get('title').get('$') if places.get('title') is not None else places.get('@id'),
+                 'value': '%s, %s' % (
+                     places.get('point').get('pointLongitude').get('$'),
+                     places.get('point').get('pointLatitude').get('$'))})
+
+            dataset_dict['extras'].append(
+                {'key': 'spatial',
+                 'value': json.dumps({'type': 'Point',
+                                      'coordinates': [float(places.get('point').get('pointLongitude').get('$')),
+                                                      float(places.get('point').get('pointLatitude').get('$'))]})})
+        else:
+            dataset_dict['extras'].append(
+                {'key': places.get('title').get('$') if places.get('title') is not None else places.get('@id'),
+                 'value': ''})
+
     elif isinstance(places, list):
         geopoints = list()
         existing_keys = list()
         for place in places:
-            key = place.get('title').get('$') if place.get('title', None) is not None else place.get('@id')
+            if isinstance(place.get('title'), list):
+                key = [i for i in place.get('title')]
+            elif isinstance(place.get('title'), dict):
+                key = place.get('title').get('$') if place.get('title', None) is not None else place.get('@id')
+
             if place.get('point', False) and place.get('point').get('pointLongitude',
                                                                     False) and key not in existing_keys:
                 dataset_dict['extras'].append(
@@ -253,10 +279,10 @@ def __main__():
     start = time.time()
 
     print('start')
+    args = None
     try:
         args = sys.argv[1]
     except IndexError:
-        args = None
         exit('organization is required on the command line')
 
     try:

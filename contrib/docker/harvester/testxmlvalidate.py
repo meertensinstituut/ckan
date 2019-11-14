@@ -74,9 +74,10 @@ if __name__ == "__main__":
         try:
             validate(filename)
             # print(colored('{} is valid'.format(filename), 'green'))
-        except Exception as ex:
-            print(colored('{} is not valid, error detail: {}'.format(filename, repr(ex)), 'red'))
-            error_list.append('{} is not valid\n error detail: {}\n'.format(filename, repr(ex)))
+        except etree.DocumentInvalid as ex:
+            if 'because the content type is a simple type definition' not in ex.message:
+                print(colored('{} is not valid, error detail: {}'.format(filename, repr(ex)), 'red'))
+                error_list.append('{} is not valid\n error detail: {}\n'.format(filename, repr(ex)))
     print(colored("............................. Validation Finished ..............................", 'blue'))
     print(colored("............................. Validation Result Overview ..............................", 'blue'))
     if len(error_list) == 0:
