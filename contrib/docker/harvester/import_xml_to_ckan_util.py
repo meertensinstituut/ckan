@@ -146,19 +146,21 @@ def get_all_created_package(apikey):
     return created_package
 
 
-def remove_all_created_package(created_package, apikey):
+def remove_all_created_package(created_package, apikey, clear=True):
     for i in created_package:
         dataset_dict = {'id': i}
         # print('removing package: [%s]' % i)
         response = requests.post('http://ckan:5000/api/3/action/package_delete',
                       data=dataset_dict,
                       headers={"X-CKAN-API-Key": apikey})
-        assert response.status_code == 200, 'Error occurred: %s; data: %s' % (response.content, i)
+        if not clear:
+            assert response.status_code == 200, 'Error: %s %s; data: %s' % (response.status_code, response.content, i)
         # purge dataset
         response = requests.post('http://ckan:5000/api/3/action/dataset_purge',
                       data=dataset_dict,
                       headers={"X-CKAN-API-Key": apikey})
-        assert response.status_code == 200, 'Error occurred: %s; data: %s' % (response.content, i)
+        if not clear:
+            assert response.status_code == 200, 'Error: %s %s; data: %s' % (response.status_code, response.content, i)
 
     return True
 
