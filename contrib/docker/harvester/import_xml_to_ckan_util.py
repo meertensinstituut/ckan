@@ -11,9 +11,9 @@ import datetime
 apikey = '0d3cd4de-e123-4895-bd72-c66fd585a74f'
 
 orgs = {
-    'meertens': ['Meertens Institute', 'meertens'],
-    'ucla': ['UCLA', 'ucla'],
-    'wossidia': ['WossiDiA', 'wossidia']
+    'meertens': ['Meertens Institute', 'meertens', 'http://www.meertens.knaw.nl/cms/templates/mi_hetgelaat/css/images/meertens_logo.png'],
+    'ucla': ['UCLA', 'ucla', 'http://etkspace.scandinavian.ucla.edu/images/comp_folklore_logo.png'],
+    'wossidia': ['WossiDiA - University of Rostock', 'wossidia', 'http://static.wossidia.de/images/wossidia4isebel.svg']
 }
 debug = False
 qty = 100
@@ -147,21 +147,24 @@ def get_all_created_package(apikey):
 
 
 def remove_all_created_package(created_package, apikey, clear=True):
+    # TODO: when there is conflict, the dataset will not be removed. solve this either in solr or in ckan
+    # TODO: test if can purge in batch mode
     for i in created_package:
         dataset_dict = {'id': i}
         # print('removing package: [%s]' % i)
-        response = requests.post('http://ckan:5000/api/3/action/package_delete',
-                      data=dataset_dict,
-                      headers={"X-CKAN-API-Key": apikey})
-        if not clear:
-            assert response.status_code == 200, 'Error: %s %s; data: %s' % (response.status_code, response.content, i)
-        # purge dataset
-        response = requests.post('http://ckan:5000/api/3/action/dataset_purge',
-                      data=dataset_dict,
-                      headers={"X-CKAN-API-Key": apikey})
-        if not clear:
-            assert response.status_code == 200, 'Error: %s %s; data: %s' % (response.status_code, response.content, i)
+        try:
+            response = requests.post('http://ckan:5000/api/3/action/package_delete',
+                          data=dataset_dict,
+                          headers={"X-CKAN-API-Key": apikey})
 
+            # purge dataset
+            response = requests.post('http://ckan:5000/api/3/action/dataset_purge',
+                          data=dataset_dict,
+                          headers={"X-CKAN-API-Key": apikey})
+        except Exception as ex:
+            print('Error: %s %s; data: %s'.format(response.status_code, ex.message, i))
+            if not clear:
+                exit()
     return True
 
 
