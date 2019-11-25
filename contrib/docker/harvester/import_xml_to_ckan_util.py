@@ -152,19 +152,28 @@ def remove_all_created_package(created_package, apikey, clear=True):
     for i in created_package:
         dataset_dict = {'id': i}
         # print('removing package: [%s]' % i)
+
+        response_delete = None
+        response_purge = None
         try:
-            response = requests.post('http://ckan:5000/api/3/action/package_delete',
-                          data=dataset_dict,
-                          headers={"X-CKAN-API-Key": apikey})
+            # delete dataset, then it can be purged
+            response_delete = requests.post('http://ckan:5000/api/3/action/package_delete',
+                                            data=dataset_dict,
+                                            headers={"X-CKAN-API-Key": apikey})
 
             # purge dataset
-            response = requests.post('http://ckan:5000/api/3/action/dataset_purge',
-                          data=dataset_dict,
-                          headers={"X-CKAN-API-Key": apikey})
+            response_purge = requests.post('http://ckan:5000/api/3/action/dataset_purge',
+                                           data=dataset_dict,
+                                           headers={"X-CKAN-API-Key": apikey})
         except Exception as ex:
-            print('Error: %s %s; data: %s'.format(response.status_code, ex.message, i))
+            if response_delete and response_purge:
+                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message, response_delete.status_code, response_purge.status_code, i))
+            elif response_delete:
+                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message, response_delete.status_code, response_purge, i))
+            elif response_purge:
+                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message, response_delete, response_purge.status_code, i))
             if not clear:
-                exit()
+                exit('Exiting due to error! With clear set to True, importing can continue ignoring error!')
     return True
 
 
