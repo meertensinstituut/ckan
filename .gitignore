@@ -53,6 +53,12 @@ ckanext-facet/*
 ckanext-timeline/
 ckanext-timeline/*
 
+ckanext-isebelimporter/
+ckanext-isebelimporter/*
+
+ckanext-isebeltranslate/
+ckanext-isebeltranslate/*
+
 contrib/docker/harvester/harvester_src/
 contrib/docker/harvester/harvester_src/*
 
