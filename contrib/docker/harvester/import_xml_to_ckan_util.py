@@ -8,15 +8,15 @@ import requests
 import hashlib
 import datetime
 
-apikey = '0d3cd4de-e123-4895-bd72-c66fd585a74f'
+apikey = 'aecda1d9-9604-4606-9421-db846548fad5'
 
 orgs = {
     'meertens': ['Meertens Institute', 'meertens', 'http://www.meertens.knaw.nl/cms/templates/mi_hetgelaat/css/images/meertens_logo.png'],
     'ucla': ['UCLA', 'ucla', 'http://etkspace.scandinavian.ucla.edu/images/comp_folklore_logo.png'],
     'wossidia': ['WossiDiA - University of Rostock', 'wossidia', 'http://static.wossidia.de/images/wossidia4isebel.svg']
 }
-debug = False
-qty = 100
+debug = True
+qty = 10
 
 
 def set_title_homepage_style():
@@ -51,7 +51,8 @@ def create_org(orgKey):
     dataset_dict = {
         'title': orgs[orgKey][0],
         'name': orgs[orgKey][1],
-        'id': orgs[orgKey][1]
+        'id': orgs[orgKey][1],
+        'image_url': orgs[orgKey][2]
     }
 
     # Use the json module to dump the dictionary to a string for posting.
