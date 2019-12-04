@@ -323,7 +323,8 @@ class PackageSearchQuery(SearchQuery):
 
         fq = []
         if 'fq' in query:
-            fq.append(query['fq'])
+            for fq_part in query.get('fq', '').split():
+                fq.append(fq_part)
         fq.extend(query.get('fq_list', []))
 
         # show only results from this CKAN instance
