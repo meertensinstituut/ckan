@@ -45,10 +45,31 @@ class XML:
         for el in root:
             if '}' in el.tag:
                 el.tag = el.tag.split('}', 1)[1]  # strip all namespaces
-                print(el.tag)
 
         # self.data['id'] = root.attrib['{http://www.w3.org/XML/1998/namespace}id']
         return root
+
+
+def load_contents_from_xml(_et_element, tag_to_look_for='content', wrapper='div'):
+    result_dict = dict()
+    for content in _et_element.iter(tag_to_look_for):
+        for k in content.attrib:
+            if '}' in k:
+                new_k = k.split('}', 1)[1]
+                content.attrib[new_k] = content.attrib[k]
+                content.attrib.pop(k)
+        # print(content.attrib)
+        if len(content.text.strip()) != 0:
+            result_dict[content.attrib.get('lang')] = content.text
+        elif len(content.text.strip()) == 0 and content.find(wrapper) is not None:
+            result_dict[content.attrib.get('lang')] = et.tostring(content.find(wrapper), 'utf-8', method='html')
+        else:
+            print(content.tag)
+            print('ERROR!\nlen of text: {}'.format(len(content.text.strip())))
+            print('content of div: {}'.format(content.get('div', None)))
+            print('dict: {}'.format({content.attrib.get('lang'): content.findall('*')}))
+            raise Exception
+    return result_dict
 
 
 def load_dict_from_xml(xml, path):
@@ -64,7 +85,7 @@ def load_dict_from_xml(xml, path):
         # add md5 of the current file to data
         story['md5'] = importlib.md5(path)
         return story
-
+    print('error! story is None')
     return None
 
 
@@ -104,12 +125,13 @@ def create_package(org, f, apikey):
     # print('taleTypes: ', story_dict.get('taleTypes').get('taleType'))
     # print(type(story_dict.get('taleTypes').get('taleType')))
     pattern = re.compile('[^a-zA-Z0-9_-]+')
+    contents = load_contents_from_xml(xml_data)
     dataset_dict = {
         'name': pattern.sub('-', story_dict.get('identifier').get('$').lower()),
         # pattern.sub('_', story_dict.get('@id').lower()),
-        'title': story_dict.get('identifier').get('$'),  # story_dict.get('@id'),
-        'notes': story_dict.get('contents').get('content').get('$') if isinstance(
-            story_dict.get('contents').get('content'), dict) else story_dict.get('contents').get('content')[0].get('$'),
+        'title': story_dict.get('title')[0].get('$') if isinstance(story_dict.get('title'), list) and story_dict.get(
+            'title', None) is not None else story_dict.get('identifier').get('$'),  # story_dict.get('@id'),
+        'notes': contents[(list(contents)[0])] if len(list(contents)) > 0 else '',
         'url': str(story_dict.get('purl').get('$')),
         # 'type': story_dict.get('type').get('$'),
         'owner_org': org,
@@ -134,7 +156,7 @@ def create_package(org, f, apikey):
     }
     # exit(dataset_dict)
     # add keywords
-    if story_dict.get('keywords') and story_dict.get('keywords').get('keyword'):
+    if story_dict.get('keywords', None) and story_dict.get('keywords').get('keyword', None):
         if isinstance(story_dict.get('keywords').get('keyword'), list):
             keywords_list = list()
             for i in story_dict.get('keywords').get('keyword'):
@@ -166,9 +188,16 @@ def create_package(org, f, apikey):
     elif isinstance(taleTypes, list):
         value = '; '.join(['%s: %s' % (taleType.get('@number'), taleType.get('@title')) for taleType in taleTypes])
         dataset_dict['extras'].append({'key': 'Tale Type', 'value': value})
+        existing_taletypes = list()
         for taleType in taleTypes:
-            dataset_dict['extras'].append(
-                {'key': taleType.get('@number'), 'value': taleType.get('@title')})
+            try:
+                if not taleType.get('@number') in existing_taletypes:
+                    dataset_dict['extras'].append(
+                        {'key': taleType.get('@number'), 'value': taleType.get('@title')})
+                    existing_taletypes.append(taleType.get('@number'))
+            except Exception as ex:
+                print('existing_taletypes is: {}'.format(existing_taletypes))
+                exit(ex)
 
     # add events
     events = story_dict.get('events').get('event') if story_dict.get('events') is not None else None
@@ -186,65 +215,32 @@ def create_package(org, f, apikey):
                 {'key': event.get('role').get('$').capitalize(), 'value': event.get('date').get('$')})
 
     # add contents
-    contents = story_dict.get('contents').get('content') if story_dict.get('contents') is not None else None
-    if isinstance(contents, dict):
-        dataset_dict['extras'].append(
-            {'key': contents.get('@lang'), 'value': contents.get('$')})
-    elif isinstance(contents, list):
-        for content in contents:
-            dataset_dict['extras'].append(
-                {'key': content.get('@lang'), 'value': content.get('$')})
+    for k, v in contents.items():
+        dataset_dict['extras'].append({'key': k, 'value': v})
 
     # add persons
     persons = story_dict.get('persons').get('person') if story_dict.get('persons') is not None else None
-    if isinstance(persons, dict):
-        importlib.process_persons(persons, dataset_dict)
-    elif isinstance(persons, list):
-        for person in persons:
-            importlib.process_persons(person, dataset_dict)
+    persons_dict = None
+    if persons and isinstance(persons, dict):
+        persons_dict = importlib.process_persons_dict(persons)
+    elif persons and isinstance(persons, list):
+        persons_dict = importlib.process_persons_list(persons)
+    else:
+        persons_dict = None
+    if persons_dict:
+        importlib.write_persons_to_dataset(persons_dict, dataset_dict)
 
     # add places
+    importlib.spatial_exists = False
     places = story_dict.get('places').get('place') if story_dict.get('places') is not None else None
-    if isinstance(places, dict):
-        if places.get('point', None) is not None:
-            dataset_dict['extras'].append(
-                {'key': places.get('title').get('$') if places.get('title') is not None else places.get('@id'),
-                 'value': '%s, %s' % (
-                     places.get('point').get('pointLongitude').get('$'),
-                     places.get('point').get('pointLatitude').get('$'))})
-
-            dataset_dict['extras'].append(
-                {'key': 'spatial',
-                 'value': json.dumps({'type': 'Point',
-                                      'coordinates': [float(places.get('point').get('pointLongitude').get('$')),
-                                                      float(places.get('point').get('pointLatitude').get('$'))]})})
-        else:
-            dataset_dict['extras'].append(
-                {'key': places.get('title').get('$') if places.get('title') is not None else places.get('@id'),
-                 'value': ''})
-
-    elif isinstance(places, list):
-        geopoints = list()
-        existing_keys = list()
-        for place in places:
-            if isinstance(place.get('title'), list):
-                key = [i for i in place.get('title')]
-            elif isinstance(place.get('title'), dict):
-                key = place.get('title').get('$') if place.get('title', None) is not None else place.get('@id')
-
-            if place.get('point', False) and place.get('point').get('pointLongitude',
-                                                                    False) and key not in existing_keys:
-                dataset_dict['extras'].append(
-                    {'key': key,
-                     'value': '%s, %s' % (place.get('point').get('pointLongitude').get('$'),
-                                          place.get('point').get('pointLatitude').get('$'))})
-                geopoints.append([float(place.get('point').get('pointLongitude').get('$')),
-                                  float(place.get('point').get('pointLatitude').get('$'))])
-                existing_keys.append(key)
-        dataset_dict['extras'].append(
-            {'key': 'spatial',
-             'value': json.dumps({'type': 'MultiPoint',
-                                  'coordinates': geopoints})})
+    if places and isinstance(places, dict):
+        places_dict = importlib.process_places_dict(places)
+    elif places and isinstance(places, list):
+        places_dict = importlib.process_places_list(places)
+    else:
+        places_dict = None
+    if places_dict:
+        importlib.write_places_to_dataset(places_dict, dataset_dict)
 
     # Use the json module to dump the dictionary to a string for posting
     data_string = urllib2.quote(json.dumps(dataset_dict))
@@ -279,6 +275,9 @@ def __main__():
     start = time.time()
 
     print('start')
+    # init the config
+    importlib.init()
+
     args = None
     try:
         args = sys.argv[1]

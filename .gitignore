@@ -63,3 +63,6 @@ contrib/docker/harvester/harvester_src/
 contrib/docker/harvester/harvester_src/*
 
 .editorconfig
+
+# conf file
+contrib/docker/harvester/importer-conf.json

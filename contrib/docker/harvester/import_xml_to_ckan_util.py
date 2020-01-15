@@ -8,15 +8,32 @@ import requests
 import hashlib
 import datetime
 
-apikey = 'aecda1d9-9604-4606-9421-db846548fad5'
-
-orgs = {
-    'meertens': ['Meertens Institute', 'meertens', 'http://www.meertens.knaw.nl/cms/templates/mi_hetgelaat/css/images/meertens_logo.png'],
-    'ucla': ['UCLA', 'ucla', 'http://etkspace.scandinavian.ucla.edu/images/comp_folklore_logo.png'],
-    'wossidia': ['WossiDiA - University of Rostock', 'wossidia', 'http://static.wossidia.de/images/wossidia4isebel.svg']
-}
-debug = True
+conf_file_path = 'importer-conf.json'
+apikey = ''
+orgs = dict()
+debug = False
 qty = 10
+spatial_exists = False
+
+
+def init():
+    global apikey
+    global orgs
+    global debug
+    global qty
+    global spatial_exists
+
+    try:
+        with open(conf_file_path, 'r') as conf_file:
+            conf = json.load(conf_file)
+
+            apikey = conf['apikey']
+            orgs = conf['orgs']
+            debug = conf['debug']
+            qty = conf['qty']
+            spatial_exists = conf['spatial_exists']
+    except Exception as ex:
+        exit('Error occurred during loading and parsing of importer config file: {}'.format(ex.message))
 
 
 def set_title_homepage_style():
@@ -168,11 +185,16 @@ def remove_all_created_package(created_package, apikey, clear=True):
                                            headers={"X-CKAN-API-Key": apikey})
         except Exception as ex:
             if response_delete and response_purge:
-                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message, response_delete.status_code, response_purge.status_code, i))
+                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message,
+                                                                                     response_delete.status_code,
+                                                                                     response_purge.status_code, i))
             elif response_delete:
-                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message, response_delete.status_code, response_purge, i))
+                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message,
+                                                                                     response_delete.status_code,
+                                                                                     response_purge, i))
             elif response_purge:
-                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message, response_delete, response_purge.status_code, i))
+                print('Error occurred[{}]! Deletion: {}; Purge: {}; data: {}'.format(ex.message, response_delete,
+                                                                                     response_purge.status_code, i))
             if not clear:
                 exit('Exiting due to error! With clear set to True, importing can continue ignoring error!')
     return True
@@ -222,24 +244,124 @@ def get_package_by_name(name, apikey):
     return None
 
 
-def process_persons(persons, dataset_dict):
-    existing_keys = dict()
-    if isinstance(persons.get('role'), list):
-        for role in persons.get('role'):
-            if not role.get('$') in existing_keys.keys():
-                existing_keys[role.get('$')] = 1
-            else:
-                existing_keys[role.get('$')] = existing_keys[role.get('$')] + 1
-            role_key_counter = existing_keys[role.get('$')]
+def write_persons_to_dataset(persons_dict, dataset_dict):
+    for k, v in persons_dict.iteritems():
+        dataset_dict['extras'].append(
+            {'key': k,
+             'value': '; '.join([i for i in v if i is not ''])})
 
-            dataset_dict['extras'].append(
-                {'key': '%s %s' % (role.get('$'), role_key_counter), 'value': persons.get('name').get('$')})
-            dataset_dict['extras'].append(
-                {'key': '%s %s gender' % (role.get('$'), role_key_counter),
-                 'value': persons.get('gender').get('$') if persons.get('gender') else ''})
+
+def process_persons_list(persons):
+    persons_dict = dict()
+    first_run = True
+    for person in persons:
+        if first_run:
+            persons_dict = process_persons_dict(person)
+            first_run = False
+        else:
+            merge_dict(persons_dict, (process_persons_dict(person)))
+    return persons_dict
+
+
+def process_persons_dict(persons):
+    persons_dict = dict()
+
+    def process_person_role(p, r):
+        # p stands for person
+        # r stands for role of person
+        # k is the current key
+        # v is the current value associate with the key
+        k = 'person_{}'.format(r)
+        v = p.get('name').get('$') if p.get('name') is not None else p.get('@id')
+
+        if k not in persons_dict.keys():
+            persons_dict[k] = list()
+        persons_dict[k].append(v)
+
+        if '{}_gender'.format(k) not in persons_dict.keys():
+            persons_dict['{}_gender'.format(k)] = list()
+        persons_dict['{}_gender'.format(k)].append(persons.get('gender').get('$') if persons.get('gender') else '')
+
+    if isinstance(persons.get('role'), dict):
+        role = persons.get('role').get('$')
+        process_person_role(persons, role)
+    elif isinstance(persons.get('role'), list):
+        for role_dict in persons.get('role'):
+            role = role_dict.get('$')
+            process_person_role(persons, role)
     else:
-        dataset_dict['extras'].append(
-            {'key': persons.get('role').get('$'), 'value': persons.get('name').get('$')})
-        dataset_dict['extras'].append(
-            {'key': persons.get('role').get('$') + ' gender',
-             'value': persons.get('gender').get('$') if persons.get('gender') else ''})
+        return None
+
+    return persons_dict
+
+
+def write_places_to_dataset(places_dict, dataset_dict):
+    for k, v in places_dict.iteritems():
+        if k == 'geopoints':
+            dataset_dict['extras'].append(
+                {'key': 'spatial',
+                 'value': json.dumps({'type': 'MultiPoint',
+                                      'coordinates': v})})
+        else:
+            dataset_dict['extras'].append(
+                {'key': k,
+                 'value': '; '.join([i for i in v if i is not ''])})
+
+
+def process_places_dict(places):
+    places_dict = dict()
+
+    def process_place_role(p, r):
+        # p stands for place
+        # r stands for role of place
+        # k is the current key
+        # v is the current value associate with the key
+        k = 'place_{}'.format(r)
+        v = p.get('title').get('$') if p.get('title') is not None else p.get('@id')
+
+        if k not in places_dict.keys():
+            places_dict[k] = list()
+        places_dict[k].append(u'{}'.format(v))
+
+        if 'geopoints' not in places_dict.keys():
+            places_dict['geopoints'] = list()
+
+        if p.get('point') is not None and \
+            p.get('point').get('pointLongitude') is not None and \
+            p.get('point').get('pointLatitude') is not None:
+            places_dict['geopoints'].append([float(p.get('point').get('pointLongitude').get('$')),
+                                             float(p.get('point').get('pointLatitude').get('$'))])
+
+    if isinstance(places.get('role'), dict):
+        role = places.get('role').get('$')
+        process_place_role(places, role)
+    elif isinstance(places.get('role'), list):
+        for role_dict in places.get('role'):
+            role = role_dict.get('$')
+            process_place_role(places, role)
+    else:
+        return None
+
+    return places_dict
+
+
+def process_places_list(places):
+    places_dict = dict()
+    first_run = True
+    for place in places:
+        if first_run:
+            places_dict = process_places_dict(place)
+            first_run = False
+        else:
+            merge_dict(places_dict, process_places_dict(place))
+            # places_dict.update(process_places_dict(place))
+    return places_dict
+
+
+def merge_dict(dict1, dict2):
+    for k, v in dict2.iteritems():
+        if k in dict1.keys():
+            dict1[k] = dict1[k] + v
+        else:
+            dict1[k] = v
+    return dict1

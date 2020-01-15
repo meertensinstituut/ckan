@@ -185,8 +185,10 @@ schema. In this case the version should be set to the next CKAN version number.
     <field name="keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
     <field name="nl_keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
     <field name="da_keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
-    <field name="de_keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
+    <field name="deu_keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
 
+    <field name="place_narration" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
+    <field name="person_narrator_gender" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
     <field name="date" type="date" indexed="true" stored="true" multiValued="false"/>
     <!-- <field name="bbox_area" type="float" indexed="true" stored="true" />
     <field name="maxx" type="float" indexed="true" stored="true" />

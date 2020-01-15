@@ -46,6 +46,7 @@ fi
 
 # Start docker
 docker-compose up -d --build
+#docker-compose up -d --build ckan
 # sleep 10
 # docker-compose restart ckan
 # sleep 10
