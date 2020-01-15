@@ -66,3 +66,9 @@ contrib/docker/harvester/harvester_src/*
 
 # conf file
 contrib/docker/harvester/importer-conf.json
+
+contrib/docker/translations/
+translations/*
+
+ssl/
+ssl/*
