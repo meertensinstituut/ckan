@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+import os
 import urllib2
 import json
 from pprint import pprint
@@ -14,6 +15,8 @@ orgs = dict()
 debug = False
 qty = 10
 spatial_exists = False
+machine_translation_target_path = ''
+machine_translation_target = ''
 
 
 def init():
@@ -22,6 +25,8 @@ def init():
     global debug
     global qty
     global spatial_exists
+    global machine_translation_target_path
+    global machine_translation_target
 
     try:
         with open(conf_file_path, 'r') as conf_file:
@@ -32,6 +37,8 @@ def init():
             debug = conf['debug']
             qty = conf['qty']
             spatial_exists = conf['spatial_exists']
+            machine_translation_target_path = conf['machine_translation_target_path']
+            machine_translation_target = conf['machine_translation_target']
     except Exception as ex:
         exit('Error occurred during loading and parsing of importer config file: {}'.format(ex.message))
 
@@ -365,3 +372,16 @@ def merge_dict(dict1, dict2):
         else:
             dict1[k] = v
     return dict1
+
+
+def import_translation(org, story_identifier):
+    original_target_folder = '{}_{}'.format(orgs[org][3], machine_translation_target)
+    translated_file_name = '{}.{}.txt'.format(original_target_folder, story_identifier)
+    translated_stories_fullpath = os.path.join(machine_translation_target_path, original_target_folder, translated_file_name)
+    try:
+        with open(translated_stories_fullpath, 'r') as fh:
+            print('trnaslated!!!!!!!!!!!!!!!!!')
+            return fh.readlines()
+    except IOError:
+        pass
+

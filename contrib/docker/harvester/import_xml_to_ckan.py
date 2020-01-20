@@ -126,6 +126,7 @@ def create_package(org, f, apikey):
     # print(type(story_dict.get('taleTypes').get('taleType')))
     pattern = re.compile('[^a-zA-Z0-9_-]+')
     contents = load_contents_from_xml(xml_data)
+    story_global_identifier = story_dict.get('identifier').get('$').lower()
     dataset_dict = {
         'name': pattern.sub('-', story_dict.get('identifier').get('$').lower()),
         # pattern.sub('_', story_dict.get('@id').lower()),
@@ -242,6 +243,11 @@ def create_package(org, f, apikey):
     if places_dict:
         importlib.write_places_to_dataset(places_dict, dataset_dict)
 
+    # add translated story IF translation exsits
+    translation = importlib.import_translation(org, story_global_identifier)
+    if translation is not None and translation is not '':
+        dataset_dict['extras'].append({'key': 'machine_translation_target', 'value': translation})
+
     # Use the json module to dump the dictionary to a string for posting
     data_string = urllib2.quote(json.dumps(dataset_dict))
 
@@ -291,16 +297,14 @@ def __main__():
 
     if args in ('meertens', 'verhalenbank'):
         org = 'meertens'
-        wd = '/var/harvester/oai-isebel/isebel_verhalenbank'
     elif args == 'ucla':
         org = 'ucla'
-        wd = '/var/harvester/oai-isebel/isebel_ucla'
     elif args in ('wossidia', 'rostock'):
         org = 'wossidia'
-        wd = '/var/harvester/oai-isebel/isebel_rostock'
     else:
         raise Exception('Invalid organization')
 
+    wd = importlib.orgs[org][4]
     apikey = importlib.apikey
     debug = importlib.debug
     qty = importlib.qty
