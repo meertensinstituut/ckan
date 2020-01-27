@@ -52,7 +52,6 @@ def set_title_homepage_style():
     # Use the json module to dump the dictionary to a string for posting.
     data_string = urllib2.quote(json.dumps(dataset_dict))
 
-    # We'll use the package_create function to create a new dataset.
     request = urllib2.Request(
         'http://ckan:5000/api/3/action/config_option_update')
 
@@ -102,7 +101,6 @@ def create_org(orgKey):
 
 
 def org_exists(orgKey):
-    print('http://ckan:5000/api/3/action/organization_show?id=%s' % orgKey)
     request = urllib2.Request('http://ckan:5000/api/3/action/organization_show?id=%s' % orgKey)
     # Make the HTTP request.
     try:
@@ -210,7 +208,6 @@ def remove_all_created_package(created_package, apikey, clear=True):
 def get_package_by_id(id, apikey):
     request = urllib2.Request('http://ckan:5000/api/3/action/package_show?id=%s' % id)
     request.add_header('Authorization', apikey)
-
     # Make the HTTP request.
     response = None
     try:
@@ -223,7 +220,28 @@ def get_package_by_id(id, apikey):
         response_dict = json.loads(response.read())
         assert response_dict['success'] is True
 
-        pprint(response_dict)
+        return response_dict
+
+    return None
+
+
+def update_package_by_id(id, apikey, dataset_dict):
+    request = urllib2.Request('http://ckan:5000/api/3/action/package_patch?id=%s' % id)
+    request.add_header('Authorization', apikey)
+    data_string = urllib2.quote(json.dumps(dataset_dict))
+
+    # Make the HTTP request.
+    response = None
+    try:
+        response = urllib2.urlopen(request, data_string)
+    except Exception as e:
+        print(e.message)
+
+    if response and response.code == 200:
+        # Use the json module to load CKAN's response into a dictionary.
+        response_dict = json.loads(response.read())
+        assert response_dict['success'] is True
+
         return response_dict
 
     return None
@@ -245,7 +263,6 @@ def get_package_by_name(name, apikey):
         response_dict = json.loads(response.read())
         assert response_dict['success'] is True
 
-        pprint(response_dict)
         return response_dict
 
     return None
@@ -374,14 +391,59 @@ def merge_dict(dict1, dict2):
     return dict1
 
 
-def import_translation(org, story_identifier):
+def get_new_translation_from_file(org, story_identifier):
     original_target_folder = '{}_{}'.format(orgs[org][3], machine_translation_target)
     translated_file_name = '{}.{}.txt'.format(original_target_folder, story_identifier)
-    translated_stories_fullpath = os.path.join(machine_translation_target_path, original_target_folder, translated_file_name)
+    translated_stories_fullpath = os.path.join(machine_translation_target_path, original_target_folder,
+                                               translated_file_name)
+
     try:
         with open(translated_stories_fullpath, 'r') as fh:
-            print('trnaslated!!!!!!!!!!!!!!!!!')
-            return fh.readlines()
+            print('New translation found!')
+            # print(fh.readlines())
+            # exit()
+            # return fh.readlines()[0].encode('utf-8')
+            return ''.join([line.decode('utf-8') for line in fh.readlines()])
     except IOError:
-        pass
+        return None
 
+
+def set_extra_data_field(apikey, story_global_identifier, field, new_value):
+    dataset_dict = get_package_by_id(story_global_identifier.replace('.', '-'), apikey)
+    extras_list = dataset_dict.get('result').get('extras') if dataset_dict else None
+    if extras_list and isinstance(extras_list, list):
+
+        for item_dict in extras_list:
+            k = item_dict.get('key').encode('utf-8')
+            if k == field:
+                # print('k: {}; v: {}'.format(k, v))
+                extras_list.remove(item_dict)
+                extras_list.append({'key': field, 'value': new_value})
+                dataset_dict['extras'] = extras_list
+                dataset_dict['id'] = story_global_identifier.replace('.', '-')
+                update_package_by_id(story_global_identifier.replace('.', '-'), apikey, dataset_dict)
+                return True
+
+    return False
+
+
+def get_extra_data_field(apikey, story_global_identifier, field, lang=False):
+    dataset_dict = get_package_by_id(story_global_identifier.replace('.', '-'), apikey)
+    if dataset_dict is None:
+        return 'no record'
+
+    extras_list = dataset_dict.get('result').get('extras') if dataset_dict else None
+    if extras_list and isinstance(extras_list, list):
+        if lang:
+            for item_dict in extras_list:
+                k = item_dict.get('key').encode('utf-8')
+                v = item_dict.get('value').encode('utf-8')
+                if k in field:
+                    return v
+        else:
+            for item_dict in extras_list:
+                k = item_dict.get('key').encode('utf-8')
+                v = item_dict.get('value').encode('utf-8')
+                if k == field:
+                    return v
+    return None
