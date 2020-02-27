@@ -45,7 +45,19 @@ fi
 #fi
 
 # Start docker
-docker-compose up -d --build
+if [ -n "$1" ]; then
+  if [ "$1" == "all" ]; then
+    echo "rebuilding all"
+    docker-compose up -d --build
+  else
+    echo "rebuilding '$1'"
+    docker-compose up -d --build "$1"
+  fi
+else
+  echo "restarting"
+  docker-compose up -d
+fi
+
 #docker-compose up -d --build ckan
 # sleep 10
 # docker-compose restart ckan
@@ -60,7 +72,7 @@ docker-compose up -d --build
 docker cp harvester/import_xml_to_ckan.py ckan:/var/harvester/import_xml_to_ckan.py
 docker cp harvester/import_xml_to_ckan_util.py ckan:/var/harvester/import_xml_to_ckan_util.py
 docker cp harvester/testxmlvalidate.py ckan:/var/harvester/testxmlvalidate.py
-docker cp ../../../isebel-schema ckan:/var/harvester
+docker cp ../../../code_dev/isebel-schema ckan:/var/harvester
 docker cp ckanbashrc ckan:/usr/lib/ckan/.bashrc
 docker cp ../../../code_dev/translation-thesaurus ckan:/var/harvester/translation-thesaurus
 docker cp translations ckan:/var/harvester/translations

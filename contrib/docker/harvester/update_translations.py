@@ -42,7 +42,11 @@ def __main__():
                                                          'machine_translation_target')
         print('old translation: {}'.format(old_translation))
         new_translation = importlib.get_new_translation_from_file(org, story_global_identifier)
-        print('new translation: {}'.format(new_translation.encode('utf-8')))
+        if new_translation:
+            print('new translation: {}'.format(new_translation.encode('utf-8')))
+        else:
+            print('no new translation. skipping...')
+            continue
 
         if old_translation != new_translation:
             print('should update')

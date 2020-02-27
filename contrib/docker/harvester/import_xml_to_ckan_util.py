@@ -46,7 +46,7 @@ def init():
 def set_title_homepage_style():
     dataset_dict = {
         'ckan.site_title': 'ISEBEL',
-        'ckan.homepage_style': 2
+        'ckan.homepage_style': 4
     }
 
     # Use the json module to dump the dictionary to a string for posting.
