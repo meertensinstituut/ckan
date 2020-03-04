@@ -182,6 +182,7 @@ schema. In this case the version should be set to the next CKAN version number.
     <dynamicField name="*" type="string" indexed="true"  stored="false"/>
 
     <!-- ISEBEL changes start -->
+    <field name="raw_xml" type="text" indexed="false" stored="false" multiValued="false"/>
     <field name="keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
     <field name="nl_keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
     <field name="da_keyword" type="semicolonDelimited" indexed="true" stored="true" multiValued="true"/>
