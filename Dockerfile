@@ -37,10 +37,12 @@ ARG CKAN_SITE_URL
 # install package needed for importing scripts
 USER root
 RUN pip install --upgrade pip
+RUN pip install -vU setuptools
 RUN pip install xmljson && \
     pip install lxml && \
-    pip install 'elementpath==1.2.0' && \
-    pip install xmlschema && \
+#    pip install elementpath && \
+    pip install 'elementpath==1.4.0' && \
+    pip install 'xmlschema==1.0.18' && \
     pip install termcolor
 # RUN ckan-pip install -e git+https://github.com/liip/ckanext-ddi.git#egg=ckanext-ddi --src /var/lib/ckan/ckanext && \
     # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop
