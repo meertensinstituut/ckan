@@ -157,10 +157,28 @@ def create_package(org, f, apikey):
     }
     # exit(dataset_dict)
     # add keywords
+    # TODO: add keyword id and type
+    # TODO: BUG: duplicate key, provanence combination
     if story_dict.get('keywords', None) and story_dict.get('keywords').get('keyword', None):
+        # print(story_dict.get('keywords', None))
         if isinstance(story_dict.get('keywords').get('keyword'), list):
             keywords_list = list()
+            used_keys = list()
             for i in story_dict.get('keywords').get('keyword'):
+                temp_key = 'keyword_{}'.format(i.get('$').encode('utf-8'))
+                for j in i.keys():
+                    use_key = '%s_%s' % (temp_key, j.encode('utf-8'))
+                    if use_key not in used_keys:
+                        # print(use_key)
+                        dataset_dict['extras'].append({
+                            'key': use_key,
+                            'value': i.get(j)
+                        })
+                        used_keys.append(use_key)
+                    else:
+                        print('duplicate key combination {}'.format(use_key))
+                # print('used keys are: \n{}'.format(used_keys))
+
                 if not isinstance(i.get('$'), bool) and not isinstance(i.get('$'), int):
                     keywords_list.append(i.get('$'))
                 else:

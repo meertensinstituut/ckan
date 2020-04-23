@@ -358,7 +358,7 @@ class PackageSearchQuery(SearchQuery):
             query['tie'] = query.get('tie', '0.1')
             # this minimum match is explained
             # http://wiki.apache.org/solr/DisMaxQParserPlugin#mm_.28Minimum_.27Should.27_Match.29
-            query['mm'] = query.get('mm', '2<-1 5<80%')
+            query['mm'] = query.get('mm', '2<-0 5<80%')
             query['qf'] = query.get('qf', QUERY_FIELDS)
 
         try:
