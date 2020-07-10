@@ -51,7 +51,7 @@ def __main__():
         if old_translation != new_translation:
             print('should update')
             importlib.set_extra_data_field(importlib.apikey, story_global_identifier, 'machine_translation_target',
-                                           new_translation)
+                                           "{}\n{}".format(new_translation.encode("utf-8"), old_translation.encode("utf-8")))
         else:
             print('do NOT update')
 
