@@ -213,7 +213,7 @@ def get_package_by_id(id, apikey):
     try:
         response = urllib2.urlopen(request)
     except Exception as e:
-        print(e.message)
+        return None
 
     if response and response.code == 200:
         # Use the json module to load CKAN's response into a dictionary.
@@ -226,6 +226,7 @@ def get_package_by_id(id, apikey):
 
 
 def update_package_by_id(id, apikey, dataset_dict):
+    print("calling remote API to update")
     request = urllib2.Request('http://ckan:5000/api/3/action/package_patch?id=%s' % id)
     request.add_header('Authorization', apikey)
     data_string = urllib2.quote(json.dumps(dataset_dict))
@@ -236,14 +237,15 @@ def update_package_by_id(id, apikey, dataset_dict):
         response = urllib2.urlopen(request, data_string)
     except Exception as e:
         print(e.message)
+        exit("remove call failed")
 
     if response and response.code == 200:
         # Use the json module to load CKAN's response into a dictionary.
         response_dict = json.loads(response.read())
         assert response_dict['success'] is True
-
         return response_dict
 
+    # exit("remote response return code is not 200: {}".format(response))
     return None
 
 
@@ -409,20 +411,29 @@ def get_new_translation_from_file(org, story_identifier):
 
 
 def set_extra_data_field(apikey, story_global_identifier, field, new_value):
+    print("updating...")
     dataset_dict = get_package_by_id(story_global_identifier.replace('.', '-'), apikey)
+    if not dataset_dict:
+        print("Package {} not found".format(story_global_identifier))
+        return False
+
     extras_list = dataset_dict.get('result').get('extras') if dataset_dict else None
     if extras_list and isinstance(extras_list, list):
-
         for item_dict in extras_list:
             k = item_dict.get('key').encode('utf-8')
             if k == field:
-                # print('k: {}; v: {}'.format(k, v))
+                # check if the field exists, if so, remove the old one
                 extras_list.remove(item_dict)
-                extras_list.append({'key': field, 'value': new_value})
-                dataset_dict['extras'] = extras_list
-                dataset_dict['id'] = story_global_identifier.replace('.', '-')
-                update_package_by_id(story_global_identifier.replace('.', '-'), apikey, dataset_dict)
-                return True
+                print("breaking the loop")
+                break
+
+        # set the field to the new value
+        print("setting new value")
+        extras_list.append({'key': field, 'value': new_value})
+        dataset_dict['extras'] = extras_list
+        dataset_dict['id'] = story_global_identifier.replace('.', '-')
+        update_package_by_id(story_global_identifier.replace('.', '-'), apikey, dataset_dict)
+        return True
 
     return False
 

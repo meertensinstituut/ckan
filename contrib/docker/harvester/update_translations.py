@@ -38,27 +38,61 @@ def __main__():
         filename_parts_list = f.split('.')
         story_global_identifier = '.'.join([i for i in filename_parts_list[1:4]])
 
-        old_translation = importlib.get_extra_data_field(importlib.apikey, story_global_identifier,
-                                                         'machine_translation_target')
-        print('old translation: {}'.format(old_translation))
-        new_translation = importlib.get_new_translation_from_file(org, story_global_identifier)
+        # get old translation from record
+        old_translation = importlib.get_extra_data_field(importlib.apikey, story_global_identifier, 'machine_translation_target')
+        if old_translation and type(old_translation) is not unicode:
+            old_translation = u"{}".format(old_translation.decode("utf-8"))
+
+        if not old_translation:
+            # set old translation to empty string if there is no translation in current story
+            old_translation = u""
+        if old_translation == u"no record":
+            # skip the story if there is no such record
+            print("no such story {}. skipping!".format(story_global_identifier))
+            continue
+
+        print('old translation: {}'.format(old_translation.encode("utf-8")))
+        new_translation = u"{}".format(importlib.get_new_translation_from_file(org, story_global_identifier))
         if new_translation:
             print('new translation: {}'.format(new_translation.encode('utf-8')))
         else:
             print('no new translation. skipping...')
             continue
 
-        if old_translation.encode("utf-8") != new_translation.encode("utf-8"):
-            print('should update')
-            if old_translation:
-                importlib.set_extra_data_field(importlib.apikey, story_global_identifier, 'machine_translation_target',
-                                               "{}\n{}".format(new_translation.encode("utf-8"),
-                                                               old_translation.encode("utf-8")))
+        # TODO: bug fix needed: UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 33: ordinal not in range(128)
+        # print("type: {}; value: {}".format(type(old_translation), old_translation.encode("utf-8")))
+        # print("type: {}; value: {}".format(type(new_translation), new_translation.encode("utf-8")))
+        # exit()
+        try:
+            if old_translation != new_translation:
+                print('should update')
+                if old_translation:
+                    if importlib.set_extra_data_field(importlib.apikey, story_global_identifier,
+                                                      'machine_translation_target',
+                                                      "{}\n{}".format(new_translation.encode("utf-8"),
+                                                                      old_translation.encode("utf-8"))):
+                        print("update succeed")
+                    else:
+                        print("update skipped or failed")
+                else:
+                    if importlib.set_extra_data_field(importlib.apikey, story_global_identifier,
+                                                      'machine_translation_target',
+                                                      new_translation.encode("utf-8")):
+                        print("update succeed")
+                    else:
+                        print("update skipped or failed")
             else:
-                importlib.set_extra_data_field(importlib.apikey, story_global_identifier, 'machine_translation_target',
-                                               new_translation.encode("utf-8"))
-        else:
-            print('do NOT update')
+                print('do NOT update')
+        # except UnicodeDecodeError as ex:
+        #     print("UnicodeDecodeError; old_translation: {}; new_translation: {}".format(type(old_translation), type(new_translation)))
+        #     exit(ex)
+        except AttributeError as ex:
+            print("AttributeError; old_translation: {}; new_translation: {}".format(type(old_translation),
+                                                                                    type(new_translation)))
+            exit(ex)
+        # except Exception as ex:
+        #     print("Unknown error occurred")
+        #     exit(ex)
 
         print('### end with file: %s ###' % f)
     end = time.time()
