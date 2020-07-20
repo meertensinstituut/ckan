@@ -236,8 +236,8 @@ def update_package_by_id(id, apikey, dataset_dict):
     try:
         response = urllib2.urlopen(request, data_string)
     except Exception as e:
-        print(e.message)
-        exit("remove call failed")
+        print(e)
+        exit("remote call failed")
 
     if response and response.code == 200:
         # Use the json module to load CKAN's response into a dictionary.
