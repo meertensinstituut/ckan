@@ -238,7 +238,7 @@ def update_package_by_id(id, apikey, dataset_dict):
     except Exception as e:
         print(e)
         print(dataset_dict)
-        exit("remove call failed")
+        exit("remote call failed")
 
     if response and response.code == 200:
         # Use the json module to load CKAN's response into a dictionary.
@@ -414,11 +414,11 @@ def set_extra_data_field(apikey, story_global_identifier, field, new_value):
     if extras_list and isinstance(extras_list, list):
         for item_dict in extras_list:
             k = item_dict.get('key').encode('utf-8')
-            if k == field:
+
+            # remove empty spatial info as well as the current field to be updated
+            if k == field or k == 'spatial':
                 # check if the field exists, if so, remove the old one
                 extras_list.remove(item_dict)
-                print("breaking the loop")
-                break
 
         # set the field to the new value
         print("setting new value")
