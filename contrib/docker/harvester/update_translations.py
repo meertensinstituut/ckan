@@ -34,9 +34,20 @@ def __main__():
     print('get file lists')
     for f in os.listdir(wd):
         print('### start with file: %s ###' % f)
+        full_path = os.path.join(wd, f)
+        if not os.path.isfile(full_path):
+            print('Not file, skipping...')
+            continue
 
         filename_parts_list = f.split('.')
-        story_global_identifier = '.'.join([i for i in filename_parts_list[1:4]])
+        # get global id from filename; not reliable but still the best way to go for now
+        if org == 'meertens' or org == 'ucla':
+            story_global_identifier = '.'.join([i for i in filename_parts_list[1:4]])
+            story_global_identifier = story_global_identifier.replace('.', '-')
+        elif org == 'wossidia':
+            story_global_identifier = 'de-wossidia-' + filename_parts_list[1].replace('_', "-")
+        else:
+            raise Exception('Invalid organization')
 
         # get old translation from record
         old_translation = importlib.get_extra_data_field(importlib.apikey, story_global_identifier, 'machine_translation_target')
@@ -52,17 +63,13 @@ def __main__():
             continue
 
         print('old translation: {}'.format(old_translation.encode("utf-8")))
-        new_translation = u"{}".format(importlib.get_new_translation_from_file(org, story_global_identifier))
+        new_translation = u"{}".format(importlib.get_new_translation_from_file(full_path))
         if new_translation:
             print('new translation: {}'.format(new_translation.encode('utf-8')))
         else:
             print('no new translation. skipping...')
             continue
 
-        # TODO: bug fix needed: UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 33: ordinal not in range(128)
-        # print("type: {}; value: {}".format(type(old_translation), old_translation.encode("utf-8")))
-        # print("type: {}; value: {}".format(type(new_translation), new_translation.encode("utf-8")))
-        # exit()
         try:
             if old_translation != new_translation:
                 print('should update')
@@ -90,10 +97,6 @@ def __main__():
             print("AttributeError; old_translation: {}; new_translation: {}".format(type(old_translation),
                                                                                     type(new_translation)))
             exit(ex)
-        # except Exception as ex:
-        #     print("Unknown error occurred")
-        #     exit(ex)
-
         print('### end with file: %s ###' % f)
     end = time.time()
     elapsed = end - start

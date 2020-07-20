@@ -393,18 +393,10 @@ def merge_dict(dict1, dict2):
     return dict1
 
 
-def get_new_translation_from_file(org, story_identifier):
-    original_target_folder = '{}_{}'.format(orgs[org][3], machine_translation_target)
-    translated_file_name = '{}.{}.txt'.format(original_target_folder, story_identifier)
-    translated_stories_fullpath = os.path.join(machine_translation_target_path, original_target_folder,
-                                               translated_file_name)
-
+def get_new_translation_from_file(full_path):
     try:
-        with open(translated_stories_fullpath, 'r') as fh:
+        with open(full_path, 'r') as fh:
             print('New translation found!')
-            # print(fh.readlines())
-            # exit()
-            # return fh.readlines()[0].encode('utf-8')
             return ''.join([line.decode('utf-8') for line in fh.readlines()])
     except IOError:
         return None
@@ -412,7 +404,7 @@ def get_new_translation_from_file(org, story_identifier):
 
 def set_extra_data_field(apikey, story_global_identifier, field, new_value):
     print("updating...")
-    dataset_dict = get_package_by_id(story_global_identifier.replace('.', '-'), apikey)
+    dataset_dict = get_package_by_id(story_global_identifier, apikey)
     if not dataset_dict:
         print("Package {} not found".format(story_global_identifier))
         return False
@@ -431,15 +423,16 @@ def set_extra_data_field(apikey, story_global_identifier, field, new_value):
         print("setting new value")
         extras_list.append({'key': field, 'value': new_value})
         dataset_dict['extras'] = extras_list
-        dataset_dict['id'] = story_global_identifier.replace('.', '-')
-        update_package_by_id(story_global_identifier.replace('.', '-'), apikey, dataset_dict)
+        dataset_dict['id'] = story_global_identifier
+        update_package_by_id(story_global_identifier, apikey, dataset_dict)
         return True
 
     return False
 
 
 def get_extra_data_field(apikey, story_global_identifier, field, lang=False):
-    dataset_dict = get_package_by_id(story_global_identifier.replace('.', '-'), apikey)
+    # dataset_dict = get_package_by_id(story_global_identifier.replace('.', '-'), apikey)
+    dataset_dict = get_package_by_id(story_global_identifier, apikey)
     if dataset_dict is None:
         return 'no record'
 
