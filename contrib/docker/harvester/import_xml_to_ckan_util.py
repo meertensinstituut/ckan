@@ -237,7 +237,8 @@ def update_package_by_id(id, apikey, dataset_dict):
         response = urllib2.urlopen(request, data_string)
     except Exception as e:
         print(e)
-        exit("remote call failed")
+        print(dataset_dict)
+        exit("remove call failed")
 
     if response and response.code == 200:
         # Use the json module to load CKAN's response into a dictionary.
@@ -423,8 +424,8 @@ def set_extra_data_field(apikey, story_global_identifier, field, new_value):
         print("setting new value")
         extras_list.append({'key': field, 'value': new_value})
         dataset_dict['extras'] = extras_list
-        dataset_dict['id'] = story_global_identifier
-        update_package_by_id(story_global_identifier, apikey, dataset_dict)
+        dataset_dict['id'] = story_global_identifier.replace('.', '-')
+        update_package_by_id(story_global_identifier.replace('.', '-'), apikey, dataset_dict)
         return True
 
     return False
