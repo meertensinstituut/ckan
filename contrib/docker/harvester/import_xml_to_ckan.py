@@ -262,7 +262,7 @@ def create_package(org, f, apikey):
         importlib.write_places_to_dataset(places_dict, dataset_dict)
 
     # add translated story IF translation exsits
-    translation = importlib.get_new_translation_from_file(org, story_global_identifier)
+    translation = importlib.get_new_translation_from_file(story_global_identifier)
     if translation is not None and translation is not '':
         dataset_dict['extras'].append({'key': 'machine_translation_target', 'value': translation})
 
