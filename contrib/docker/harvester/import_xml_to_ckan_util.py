@@ -404,7 +404,6 @@ def get_new_translation_from_file(full_path):
 
 
 def set_extra_data_field(apikey, story_global_identifier, field, new_value):
-    print("updating...")
     dataset_dict = get_package_by_id(story_global_identifier, apikey)
     if not dataset_dict:
         print("Package {} not found".format(story_global_identifier))
@@ -416,9 +415,18 @@ def set_extra_data_field(apikey, story_global_identifier, field, new_value):
             k = item_dict.get('key').encode('utf-8')
 
             # remove empty spatial info as well as the current field to be updated
-            if k == field or k == 'spatial':
+            # TODO: check to make sure that the spatial info is indeed empty before removal
+            if k == field:
                 # check if the field exists, if so, remove the old one
                 extras_list.remove(item_dict)
+            elif k == 'spatial':
+                # check if the field exists, if so, remove the old one
+                v = json.loads(item_dict.get('value')).get('coordinates')
+                if len(v) == 0:
+                    print('coordinates is: {}'.format(v))
+                    print('type of coordinates is: {}: len of coordinates is: {}'.format(type(v), len(v)))
+                    print('removing')
+                    extras_list.remove(item_dict)
 
         # set the field to the new value
         print("setting new value")
