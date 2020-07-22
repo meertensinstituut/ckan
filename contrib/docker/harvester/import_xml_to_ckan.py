@@ -165,7 +165,14 @@ def create_package(org, f, apikey):
             keywords_list = list()
             used_keys = list()
             for i in story_dict.get('keywords').get('keyword'):
-                temp_key = 'keyword_{}'.format(i.get('$').encode('utf-8'))
+                try:
+                    temp_key = 'keyword_{}'.format(i.get('$').encode('utf-8'))
+                except AttributeError as ex:
+                    if type(i.get('$')) == bool or type(i.get('$')) == int:
+                        temp_key = 'keyword_{}'.format(str(i.get('$')))
+                    else:
+                        raise ex
+
                 for j in i.keys():
                     use_key = '%s_%s' % (temp_key, j.encode('utf-8'))
                     if use_key not in used_keys:
