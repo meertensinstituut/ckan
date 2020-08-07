@@ -12,10 +12,10 @@ rm -rf harvester/harvester_src
 rm -fr ../../ckanext-facet/
 
 # remove and copy the plugins from the latest codes - ckanext-isebelimporter
-rm -fr ../../ckanext-isebelimporter/
+#rm -fr ../../ckanext-isebelimporter/
 
 # remove and copy the plugins from the latest codes - ckanext-isebeltranslate
-rm -fr ../../ckanext-isebeltranslate/
+#rm -fr ../../ckanext-isebeltranslate/
 
 # remove and copy the plugins from the latest codes - ckanext-timeline
 rm -fr ../../ckanext-timeline/
