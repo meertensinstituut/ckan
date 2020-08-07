@@ -44,6 +44,7 @@ Easy start using docker
   * Go to code_dev folder: `cd code_dev`
   * Clone ISEBEL CKAN extension: `git clone https://github.com/vicding-mi/ckanext-facet.git`
   * Clone B2Find CKAN extension: `git clone https://github.com/vicding-mi/ckanext-timeline.git`
+  * Clone OAI-PMH harvester: `git clone https://github.com/meertensinstituut/oai-pmh/tree/development harvester_src`
   * Clone translator scripts: `git clone https://git.informatik.uni-rostock.de/isebel/translation-thesaurus.git` (optional)
   * Go to ckan folder: `cd ../ckan`
   * Go to docker subfolder: `cd contrib/docker`
