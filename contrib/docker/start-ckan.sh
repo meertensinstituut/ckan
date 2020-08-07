@@ -14,16 +14,16 @@ if [[ "0" -eq "$?" ]]; then
 fi
 
 # remove and copy the plugins from the latest codes - ckanext-isebelimporter
-cp -a ../../../code_dev/ckanext-isebelimporter/. ../../ckanext-isebelimporter/
-if [[ "0" -eq "$?" ]]; then
-    echo "copied successfully ckanext-isebelimporter"
-fi
+#cp -a ../../../code_dev/ckanext-isebelimporter/. ../../ckanext-isebelimporter/
+#if [[ "0" -eq "$?" ]]; then
+#    echo "copied successfully ckanext-isebelimporter"
+#fi
 
 # remove and copy the plugins from the latest codes - ckanext-isebeltranslate
-cp -a ../../../code_dev/ckanext-isebeltranslate/. ../../ckanext-isebeltranslate/
-if [[ "0" -eq "$?" ]]; then
-    echo "copied successfully ckanext-isebeltranslate"
-fi
+#cp -a ../../../code_dev/ckanext-isebeltranslate/. ../../ckanext-isebeltranslate/
+#if [[ "0" -eq "$?" ]]; then
+#    echo "copied successfully ckanext-isebeltranslate"
+#fi
 
 # remove and copy the plugins from the latest codes - ckanext-timeline
 cp -a ../../../code_dev/ckanext-timeline/. ../../ckanext-timeline/
@@ -74,5 +74,5 @@ docker cp harvester/import_xml_to_ckan_util.py ckan:/var/harvester/import_xml_to
 docker cp harvester/testxmlvalidate.py ckan:/var/harvester/testxmlvalidate.py
 docker cp ../../../code_dev/isebel-schema ckan:/var/harvester
 docker cp ckanbashrc ckan:/usr/lib/ckan/.bashrc
-docker cp ../../../code_dev/translation-thesaurus ckan:/var/harvester/translation-thesaurus
+#docker cp ../../../code_dev/translation-thesaurus ckan:/var/harvester/translation-thesaurus
 docker cp translations ckan:/var/harvester/translations

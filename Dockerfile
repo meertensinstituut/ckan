@@ -74,8 +74,6 @@ RUN ckan-pip install -U pip && \
 RUN . $CKAN_VENV/bin/activate && ls -la $CKAN_VENV/src/ckan && \
     cd $CKAN_VENV/src/ckan/ckanext-facet && python setup.py develop && \
     cd $CKAN_VENV/src/ckan/ckanext-timeline && python setup.py develop && \
-    cd $CKAN_VENV/src/ckan/ckanext-isebeltranslate && python setup.py develop && \
-    cd $CKAN_VENV/src/ckan/ckanext-isebelimporter && python setup.py develop && \
     ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git#egg=ckanext-spatial" && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckanext-spatial/pip-requirements.txt  && \
     cd $CKAN_VENV/src/ckanext-spatial && python setup.py develop && \
