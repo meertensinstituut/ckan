@@ -45,7 +45,8 @@ def __main__():
             story_global_identifier = '.'.join([i for i in filename_parts_list[1:4]])
             story_global_identifier = story_global_identifier.replace('.', '-')
         elif org == 'wossidia':
-            story_global_identifier = 'de-wossidia-' + filename_parts_list[1].replace('_', "-")
+            # story_global_identifier = 'de-wossidia-' + filename_parts_list[1].replace('_', "-")
+            story_global_identifier = '-'.join(filename_parts_list[1:4])
         else:
             raise Exception('Invalid organization')
 
