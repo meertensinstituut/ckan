@@ -1,6 +1,6 @@
 # docker-compose build && docker-compose up -d
 # If "docker-compose logs ckan" shows DB not ready, run "docker-compose restart ckan" a few times.
-version: "3.4"
+version: "3"
 
 volumes:
   ckan_config:
@@ -8,7 +8,7 @@ volumes:
   ckan_storage:
   pg_data:
   data-volume:
-  solr-volume:
+  solr_volume:
 
 services:
   ckan:
@@ -22,9 +22,12 @@ services:
       - db
       - solr
       - redis
+    depends_on:
+      - solr
+      - db
+      - redis
     ports:
       - "0.0.0.0:${CKAN_PORT}:5000"
-#      - "0.0.0.0:443:5000"
     environment:
       # Defaults work with linked containers, change to use own Postgres, SolR, Redis or Datapusher
       - CKAN_SQLALCHEMY_URL=postgresql://ckan:${POSTGRES_PASSWORD}@db/ckan
@@ -38,10 +41,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
     privileged: true
-    depends_on:
-      - solr
-      - db
-      - redis
+
     volumes:
 #      - ckan_config:/etc/ckan
 #      - ckan_home:/usr/lib/ckan
@@ -49,7 +49,6 @@ services:
       - data-volume:/var/harvester
 
   datapusher:
-    restart: always
     container_name: datapusher
     image: clementmouchet/datapusher
     ports:
@@ -67,9 +66,10 @@ services:
     environment:
       - DS_RO_PASS=${DATASTORE_READONLY_PASSWORD}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    # command: /docker-entrypoint-initdb.d/00_create_datastore.sh
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "ckan"]
 
   solr:
     restart: always
@@ -84,8 +84,8 @@ services:
     environment:
       - SOLR_VERSION=${SOLR_VERSION}
     volumes:
-#       - solr-volume:/solr/data
-      - solr-volume:/opt/solr/server/solr/ckan/data
+      - solr_volume:/opt/solr/server/solr/ckan/data
+
 
   redis:
     restart: always
@@ -100,4 +100,3 @@ services:
     command: /tmp/harvester_src/src/main/scripts/do-harvester.sh
     volumes:
       - data-volume:/var/harvester
-#      - ckan_config:/etc/ckan
