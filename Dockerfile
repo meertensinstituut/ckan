@@ -1,5 +1,5 @@
 # See CKAN docs on installation from Docker Compose on usage
-FROM debian:jessie
+FROM debian:stretch
 LABEL maintainer="Open Knowledge"
 
 # Install required system packages
@@ -10,6 +10,10 @@ RUN apt-get -q -y update \
         python-pip \
         python-virtualenv \
         python-wheel \
+        python3-dev \
+        python3-pip \
+        python3-virtualenv \
+        python3-wheel \
         libpq-dev \
         libxml2-dev \
         libxslt-dev \
@@ -34,33 +38,24 @@ ENV CKAN_STORAGE_PATH=/var/lib/ckan
 # Build-time variables specified by docker-compose.yml / .env
 ARG CKAN_SITE_URL
 
-# install package needed for importing scripts
-USER root
-RUN pip install --upgrade pip
-RUN pip install -vU setuptools
-RUN pip install xmljson && \
-    pip install lxml && \
-#    pip install elementpath && \
-    pip install 'elementpath==1.4.0' && \
-    pip install 'xmlschema==1.0.18' && \
-    pip install termcolor
-# RUN ckan-pip install -e git+https://github.com/liip/ckanext-ddi.git#egg=ckanext-ddi --src /var/lib/ckan/ckanext && \
-    # cd /var/lib/ckan/ckanext/ckanext-ddi && ckan-pip install -r requirements.txt && python setup.py develop
+# Set correct timezone
+RUN unlink /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
 
 # Create ckan user
 RUN useradd -r -u 900 -m -c "ckan account" -d $CKAN_HOME -s /bin/false ckan
-RUN unlink /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
+
 # Setup virtual environment for CKAN
 RUN mkdir -p $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH && \
     virtualenv $CKAN_VENV && \
     ln -s $CKAN_VENV/bin/pip /usr/local/bin/ckan-pip &&\
-    ln -s $CKAN_VENV/bin/paster /usr/local/bin/ckan-paster
+    ln -s $CKAN_VENV/bin/paster /usr/local/bin/ckan-paster &&\
+    ln -s $CKAN_VENV/bin/ckan /usr/local/bin/ckan
 
 # Setup CKAN
 ADD . $CKAN_VENV/src/ckan/
 RUN ckan-pip install -U pip && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirement-setuptools.txt && \
-    ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirements.txt && \
+    ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirements-py2.txt && \
     ckan-pip install -e $CKAN_VENV/src/ckan/ && \
     ckan-pip install ckanapi && \
     ckan-pip install ckantoolkit && \
@@ -81,12 +76,11 @@ RUN . $CKAN_VENV/bin/activate && ls -la $CKAN_VENV/src/ckan && \
     cd $CKAN_VENV/src/ && git clone https://github.com/ckan/ckanext-geoview.git && cd $CKAN_VENV/src/ckanext-geoview && python setup.py develop && \
     chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH && \
     deactivate
+#ADD contrib/docker/production.ini /etc/ckan/production.ini
 
-USER ckan
 ENTRYPOINT ["/ckan-entrypoint.sh"]
 
+USER ckan
 EXPOSE 5000
-ADD contrib/docker/production.ini /etc/ckan/production.ini
-# ADD contrib/docker/meertens-logo.png /var/lib/ckan/storage/uploads/group/meertens-logo.png
 
-CMD ["ckan-paster","serve","/etc/ckan/production.ini"]
+CMD ["ckan","-c","/etc/ckan/production.ini", "run", "--host", "0.0.0.0"]
