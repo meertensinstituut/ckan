@@ -1,0 +1,31 @@
+{
+  "apikey": "3406d993-3fc3-4046-b96b-914f6ebd2835",
+  "orgs": {
+    "meertens": [
+      "Meertens Institute",
+      "meertens",
+      "https://www.meertens.knaw.nl/cms/templates/mi_hetgelaat/css/images/meertens_logo.png",
+      "nld",
+      "/var/harvester/oai-isebel/isebel_verhalenbank"
+    ],
+    "ucla": [
+      "UCLA",
+      "ucla",
+      "http://etkspace.scandinavian.ucla.edu/images/comp_folklore_logo.png",
+      "dan",
+      "/var/harvester/oai-isebel/isebel_ucla"
+    ],
+    "wossidia": [
+      "WossiDiA - University of Rostock",
+      "wossidia",
+      "http://static.wossidia.de/images/wossidia4isebel.svg",
+      "deu",
+      "/var/harvester/oai-isebel/isebel_rostock"
+    ]
+  },
+  "debug": false,
+  "qty": 10,
+  "spatial_exists": false,
+  "machine_translation_target_path": "/var/harvester/translations",
+  "machine_translation_target": "eng"
+}
